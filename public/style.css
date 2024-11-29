@@ -1,0 +1,32 @@
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+}
+
+#status {
+    margin-bottom: 20px;
+    font-family: Arial, sans-serif;
+    font-size: 1.2em;
+}
+
+#users-list {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.user-item {
+    padding: 5px 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+}
+
+#canvas-container {
+    border: 2px solid #333;
+} 
