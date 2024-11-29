@@ -1,142 +1,140 @@
-let socket;
-let currentRole = null;
-let interactions = {
-    controller: {
-        x: 400,
-        y: 300,
-        size: 50
-    },
-    speaker: {
-        volume: 50
-    },
-    commenter: {
-        messages: []
-    },
-    stickers: {
-        placed: []
-    },
-    emoji: {
-        current: null
-    }
-};
+const ROLES = ["CONTROLLER", "SPEAKER", "STICKER", "NONE"];
+let allConnections = [];
+
+let p5live;
+
+let currentRoleIndex = 0;
+let userName = '';
 
 function setup() {
-    const canvas = createCanvas(800, 600);
-    canvas.parent('canvas-container');
-    
-    socket = io();
-    
-    socket.on('assignRole', (role) => {
-        currentRole = role;
-        updateStatusDisplay();
-        setupRoleSpecificListeners();
-    });
+    createCanvas(windowWidth, windowHeight);
+    let sharedCanvas = createGraphics(windowWidth, windowHeight);
 
-    socket.on('roleUpdate', (users) => {
-        // Update UI to show all users and their roles
-        updateUsersList(users);
-    });
+    userName = prompt("enter username");
+    if (userName == null || userName.trim() === "") {
+        userName = "Anonymous" + Math.floor(Math.random() * 1000);
+    }
 
-    socket.on('viewInteraction', (data) => {
-        handleInteraction(data);
-    });
-}
-
-function updateStatusDisplay() {
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = `Your role: ${currentRole.name}`;
-}
-
-function setupRoleSpecificListeners() {
-    // Clear previous listeners
-    mousePressed = () => {};
-    mouseDragged = () => {};
-    
-    switch(currentRole.name) {
-        case 'controller':
-            setupControllerListeners();
-            break;
-        case 'speaker':
-            setupSpeakerListeners();
-            break;
-        case 'commenter':
-            setupCommenterListeners();
-            break;
-        case 'stickers':
-            setupStickersListeners();
-            break;
-        case 'emoji':
-            setupEmojiListeners();
-            break;
+    myVideo = createCapture(VIDEO, gotMineConnectOthers);
+    myVideo.hide();
+    allConnections['Me'] = {
+        'canvas': sharedCanvas,
+        'video': myVideo,
+        'name': userName,
+        'role': ROLES[currentRoleIndex]
     }
 }
 
-function draw() {
-    background(220);
-    
-    // Draw base canvas elements
-    drawController();
-    drawSpeaker();
-    drawComments();
-    drawStickers();
-    drawEmojis();
+function gotMineConnectOthers(myStream) {
+    p5live = new p5LiveMedia(this, "CAPTURE", myStream, "oodlystatisfyingroom");
+    p5live.on('connect', (id) => {
+        console.log("connected");
+        // SendNewUserConnection();
+    });
+    p5live.on('stream', gotOtherStream);
+    p5live.on('disconnect', lostOtherStream);
+    p5live.on('data', (data, id) => {
+        console.log("Data event received for ID:", id);
+        gotData(data, id);
+    });
+  
 }
 
-// Role-specific setup functions
-function setupControllerListeners() {
-    mouseDragged = () => {
-        if (currentRole.name === 'controller') {
-            interactions.controller.x = mouseX;
-            interactions.controller.y = mouseY;
-            socket.emit('interaction', {
-                type: 'controller',
-                x: mouseX,
-                y: mouseY
-            });
+
+function mousePressed(){
+    SendNewUserConnection();
+}
+
+function SendNewUserConnection() {
+    if (!p5live || !p5live.socket || !p5live.socket.connected) {
+        alert("not connected");
+        return;
+    }
+    let dataToSend = {
+        dataType: 'newUserConnection',
+        userData: {
+            name: userName,
+            role: ROLES[currentRoleIndex]
         }
     };
+    console.log("SendNewUserConnection ", userName, dataToSend);
+    let dataToSendString = JSON.stringify(dataToSend);
+    p5live.send(dataToSendString);
+    console.log("SendNewUserConnection sent", dataToSendString);
 }
+let i = 0;
+function draw() {
+    background('blue');
+    fill('red');
+    textSize(20);
 
-// Add other role-specific setup functions...
-
-// Drawing functions
-function drawController() {
-    fill(0, 120, 255);
-    ellipse(interactions.controller.x, interactions.controller.y, interactions.controller.size);
-}
-
-function drawSpeaker() {
-    // Draw speaker visualization
-}
-
-function drawComments() {
-    // Draw comments
-}
-
-function drawStickers() {
-    // Draw stickers
-}
-
-function drawEmojis() {
-    // Draw emojis
-}
-
-function handleInteraction(data) {
-    switch(data.role) {
-        case 'controller':
-            interactions.controller.x = data.data.x;
-            interactions.controller.y = data.data.y;
+    switch (ROLES[currentRoleIndex]) {
+        case ROLES[0]:
+            text("CONTROLLER", width / 2, height / 2);
             break;
-        // Handle other role interactions...
+        case ROLES[1]:
+            text("SPEAKER", 100, 100);
+            break;
+        case ROLES[2]:
+            text("STICKER", 100, 100);
+            break;
+        case ROLES[3]:
+            text("NONE", 100, 100);
+            break;
     }
 }
 
-function updateUsersList(users) {
-    // Update UI to show current users and their roles
-    const usersList = document.getElementById('users-list');
-    if (!usersList) return;
-    
-    usersList.innerHTML = users.map(([socketId, userData]) => 
-        `<div class="user-item">${userData.role.name}</div>`
-    ).join('');
-} 
+// We got a new stream!
+function gotOtherStream(stream, id) {
+    console.log("gotOtherStream ", allConnections[id]);
+    otherVideo = stream;
+    allConnections[id] = {
+        'video': otherVideo,
+        'name': id,
+    }
+    otherVideo.hide();
+}
+
+function lostOtherStream(id) {
+    print("lost connection " + id)
+    delete allConnections[id];
+}
+
+
+function gotData(data, id) {
+    console.log("got data", data);
+
+    let d = JSON.parse(data);
+
+    if (d.dataType == 'newUserConnection') {
+        allConnections[id] = {
+            'name': d.userData.name,
+            'role': d.userData.role
+        };
+
+        allConnections['Me'].role = GetNextRole();
+        SendRoleChange();
+    }
+
+    if (d.dataType == 'roleChange' && allConnections[id]) {
+        allConnections[id].role = d.role;
+    }
+
+    console.log(allConnections);
+}
+function GetNextRole() {
+    if (currentRoleIndex == ROLES.length - 1) {
+        return ROLES[currentRoleIndex];
+    }
+    currentRoleIndex++;
+    let nextRole = ROLES[currentRoleIndex];
+    return nextRole;
+}
+
+function SendRoleChange() {
+    let dataToSend = {
+        dataType: 'roleChange',
+        role: allConnections['Me'].role
+    };
+    p5live.send(JSON.stringify(dataToSend));
+}
