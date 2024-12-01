@@ -48,12 +48,6 @@ class Repulsion {
         strokeWeight(this.repulsionRadius * 2);
         point(mouseX, mouseY);
     }
-
-    resize(width, height) {
-        this.width = width;
-        this.height = height;
-        this.initParticles();
-    }
 }
 
 class RepulsionParticle {
