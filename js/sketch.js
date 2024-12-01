@@ -181,7 +181,7 @@ function gotDataCanvasStream(data, id) {
         checkIfToFollow(uuid);
     }
 
-    console.log(allConnectionsData);
+    // console.log(allConnectionsData);
 }
 
 
@@ -352,23 +352,23 @@ function SendRoleChange() {
     p5liveCanvas.send(JSON.stringify(dataToSend));
 }
 
-// Add window resize handler if you don't have one
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-    repulsion.resize(width, height);
-}
+// // Add window resize handler if you don't have one
+// function windowResized() {
+//     resizeCanvas(windowWidth, windowHeight);
+//     repulsion.resize(width, height);
+// }
 
 // Add this function to handle role changes
 function handleRoleChange() {
-    // Clean up existing repulsion if changing from CONTROLLER
-    if (myData.role !== ROLES[0] && repulsion) {
-        console.log('Cleaning up repulsion - role changed from CONTROLLER');
-        repulsion = null;
-    }
+    // // Clean up existing repulsion if changing from CONTROLLER
+    // if (myData.role !== ROLES[0] && repulsion) {
+    //     console.log('Cleaning up repulsion - role changed from CONTROLLER');
+    //     repulsion = null;
+    // }
 
-    // Create new repulsion only if changing to CONTROLLER
-    if (myData.role === ROLES[0] && !repulsion) {
-        console.log('Creating new repulsion - role changed to CONTROLLER');
-        repulsion = new Repulsion(width, height);
-    }
+    // // Create new repulsion only if changing to CONTROLLER
+    // if (myData.role === ROLES[0] && !repulsion) {
+    //     console.log('Creating new repulsion - role changed to CONTROLLER');
+    //     repulsion = new Repulsion(width, height);
+    // }
 }

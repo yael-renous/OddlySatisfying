@@ -22,6 +22,7 @@ class ConnectionData {
         }
         this.currentRoleIndex++;
         this.role = ROLES[this.currentRoleIndex];
+        console.log("new role", this.role);
     }
 
     toJSON() {
