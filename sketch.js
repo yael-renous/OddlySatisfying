@@ -45,7 +45,7 @@ function gotMineConnectOthers(myStream) {
     p5LiveVideo.on('disconnect', lostOtherVideo);
 
 
-    p5liveCanvas = new p5LiveMedia(this, "CAPTURE", myStream, "oodlystatisfyingroomCanvas");
+    p5liveCanvas = new p5LiveMedia(this, "CANVAS", myCanvas, "oodlystatisfyingroomCanvas");
     p5liveCanvas.on('stream', gotOtherCanvas);
     p5liveCanvas.on('disconnect', lostOtherCanvas);
     p5liveCanvas.on('data', gotDataCanvasStream);
@@ -88,9 +88,8 @@ function gotOtherVideo(stream, id) {
     }
     else {
         let uuid = videoStreamIDs[id].uuid;
-        allConnectionsData[uuid] = {
-            'video': otherVideo,
-        };
+        if(!allConnectionsData[uuid]) allConnectionsData[uuid] = new ConnectionData(uuid, '', '', otherVideo);
+        allConnectionsData[uuid].video=otherVideo;
         console.log("existing video stream id");
     }
     otherVideo.hide();
@@ -140,15 +139,15 @@ function gotOtherCanvas(stream, id) {
     let otherCanvas = stream;
     if(!canvasStreamIDs[id]) {
         canvasStreamIDs[id] = {
+            'uuid': '',
             'canvas':otherCanvas
         };
         console.log("new canvas stream id");
     }
     else {
         let uuid = canvasStreamIDs[id].uuid;
-        allConnectionsData[uuid] = {
-            'canvas': otherCanvas,
-        };
+        if(!allConnectionsData[uuid]) allConnectionsData[uuid] = new ConnectionData(uuid, '', '', otherCanvas);
+        allConnectionsData[uuid].canvas = otherCanvas;
         console.log("existing canvas stream id");
     }
     otherCanvas.hide();
@@ -209,11 +208,13 @@ function handleNewUserCanvasConnection(userData, id) {
     else {
         canvasStreamIDs[id] = {
             'uuid': uuid,
-            'canvas': userData.canvas
+            'canvas': ''
         };
     }
 
     if(allConnectionsData[uuid]) {
+        allConnectionsData[uuid].name = userData.name;
+        allConnectionsData[uuid].role = userData.role;
         allConnectionsData[uuid].canvas = canvasStreamIDs[id].canvas;
     }
     else {
@@ -256,17 +257,17 @@ function draw() {
 }
 
 function drawControllerView() {
+    background('red');
     text("CONTROLLER", width / 2, height / 2);
 }
 
 function drawSpeakerView() {
-    text("SPEAKER", width / 2, height / 2);
     if(currentFollowingId) {
-        image(allConnectionsData[currentFollowingId].video, 0, 0);
+        image(allConnectionsData[currentFollowingId].video, 0, 0,100,100);
+        image(allConnectionsData[currentFollowingId].canvas, width/2, height/2,100,100);
     }
     else{
         findFollowing();
-        text("no one to follow", width / 2, height / 2+50);
     }
 }
 
