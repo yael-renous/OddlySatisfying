@@ -1,1 +1,1 @@
-[Link]("https://yael-renous.github.io/OddlySatisfying/")
+["Link"]("https://yael-renous.github.io/OddlySatisfying/")
