@@ -54,6 +54,15 @@ function setup() {
 
     // Initialize repulsion
     repulsion = new Repulsion(width, height);
+
+    // Show initial role popup
+    showRolePopup(ROLES[0]);
+
+    // Show recording indicator if starting as CONTROLLER
+    const recordingIndicator = document.getElementById('recording-indicator');
+    if (myData.role === ROLES[0]) {
+        recordingIndicator.classList.add('active');
+    }
 }
 
 function gotMineConnectOthers(myStream) {
@@ -286,13 +295,13 @@ function drawControllerView() {
 
     // Draw repulsion effect
     repulsion.draw();
-    // Draw recording indicator
-    let blinkRate = 1; // Blink once per second
-    let alpha = map(sin(frameCount * 0.05 * blinkRate), -1, 1, 0, 100);
+    // // Draw recording indicator
+    // let blinkRate = 1; // Blink once per second
+    // let alpha = map(sin(frameCount * 0.05 * blinkRate), -1, 1, 0, 100);
 
-    fill(0, 255, 0, alpha);
-    noStroke();
-    circle(30, 30, 10);
+    // fill(0, 255, 0, alpha);
+    // noStroke();
+    // circle(30, 30, 10);
 }
 
 function drawSpeakerView() {
@@ -310,8 +319,8 @@ function drawSpeakerView() {
     } else {
         findFollowing();
     }
-    fill('white');
-    text("SPEAKER", width / 2, height / 2);
+    // fill('white');
+    // text("SPEAKER", width / 2, height / 2);
 }
 
 function drawStickerView() {
@@ -323,8 +332,8 @@ function drawStickerView() {
     } else {
         findFollowing();
     }
-    fill('white');
-    text("STICKER", width / 2, height / 2);
+    // fill('white');
+    // text("STICKER", width / 2, height / 2);
 }
 
 function drawNoneView() {
@@ -335,8 +344,8 @@ function drawNoneView() {
     } else {
         findFollowing();
     }
-    fill('white');
-    text("NONE", width / 2, height / 2);
+    // fill('white');
+    // text("NONE", width / 2, height / 2);
 }
 
 
@@ -370,6 +379,17 @@ function handleRoleChange() {
         console.log('Creating new repulsion - role changed to CONTROLLER');
         repulsion = new Repulsion(width, height);
     }
+
+    // Show/hide recording indicator based on role
+    const recordingIndicator = document.getElementById('recording-indicator');
+    if (myData.role === ROLES[0]) {
+        recordingIndicator.classList.add('active');
+    } else {
+        recordingIndicator.classList.remove('active');
+    }
+
+    // Show role popup
+    showRolePopup(myData.role);
 }
 
 function mousePressed() {
@@ -381,3 +401,19 @@ function mousePressed() {
         });
     }
 }
+
+function showRolePopup(newRole) {
+    const popup = document.getElementById('role-popup');
+    // Make the initial role message more welcoming
+    const isInitialRole = newRole === ROLES[0];
+    popup.textContent = isInitialRole ? 
+        `Welcome! You are the ${newRole}` : 
+        `New Role: ${newRole}`;
+    
+    popup.classList.add('visible');
+
+    setTimeout(() => {
+        popup.classList.remove('visible');
+    }, 3000); // Show for 3 seconds
+}
+

@@ -65,7 +65,7 @@ class RepulsionSound {
         this.synth.volume.value = map(force, 0, 1, -30, -10);
         
         // Play the sound
-        const duration = map(force, 0, 0.1, 0.1, 0.8) + "n";
+        const duration = map(force, 0, 0.1, 0.1, 0.4) + "n";
         this.synth.triggerAttackRelease(note, duration);
         
         this.lastPlayTime = now;
