@@ -27,6 +27,8 @@ let myData;
 // Add to your global variables
 let repulsion = null;
 
+let audioStarted = false;
+
 //***========================== Setup ============================================ */
 
 function setup() {
@@ -367,5 +369,15 @@ function handleRoleChange() {
     if (myData.role === ROLES[0] && !repulsion) {
         console.log('Creating new repulsion - role changed to CONTROLLER');
         repulsion = new Repulsion(width, height);
+    }
+}
+
+function mousePressed() {
+    console.log("mouse pressed");
+    if (!audioStarted) {
+        Tone.start().then(() => {
+            console.log('Audio is ready');
+            audioStarted = true;
+        });
     }
 }
