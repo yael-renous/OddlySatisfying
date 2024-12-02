@@ -2,6 +2,10 @@
 //@date: 2024-12-01
 
 const ROLES = ["CONTROLLER", "SPEAKER", "STICKER", "NONE"];
+const webcamRatioWidth = 4;
+const webcamRatioHeight = 3;
+const canvasRatioWidth = 4;
+const canvasRatioHeight = 3;
 
 //all connections data 
 let allConnectionsData = [];
@@ -26,14 +30,20 @@ let repulsion = null;
 //***========================== Setup ============================================ */
 
 function setup() {
-    myCanvas = createCanvas(windowWidth, windowHeight);
-
-    userName = prompt("enter username");
-    if (userName == null || userName.trim() === "") {
-        userName = "Anonymous" + Math.floor(Math.random() * 1000);
+    if (windowWidth > windowHeight) {
+        myCanvas = createCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
+    }
+    else {
+        myCanvas = createCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
     }
 
+    // userName = prompt("enter username");
+    // if (userName == null || userName.trim() === "") {
+    //     userName = "Anonymous" + Math.floor(Math.random() * 1000);
+    // }
+
     myVideo = createCapture(VIDEO, gotMineConnectOthers);
+    myVideo.size(myVideo.width, (webcamRatioHeight / webcamRatioWidth )* myVideo.width);
     myVideo.hide();
 
     uuid = crypto.randomUUID();
@@ -162,12 +172,14 @@ function gotOtherCanvas(stream, id) {
 
 
 function gotDataCanvasStream(data, id) {
-    console.log("got canvas stream data", data);
+    console.log("got canvas stream data", data.dataType);
 
     let d = JSON.parse(data);
     if (d.dataType == 'newUserConnection') {
         handleNewUserCanvasConnection(d.userData, id);
+        console.log("changing my role");
         myData.nextRole();
+        console.log("my new role", myData.role);
         handleRoleChange();
         SendRoleChange();
     }
@@ -206,6 +218,7 @@ function lostOtherCanvas(id) {
 }
 
 function handleNewUserCanvasConnection(userData, id) {
+    console.log("added new user canvas connection");
     let uuid = userData.uuid;
     if (canvasStreamIDs[id]) {
         canvasStreamIDs[id].uuid = uuid;
@@ -244,7 +257,7 @@ function findFollowing() {
 //***========================== Draw ============================================ */
 
 function draw() {
-    background(100, 20);
+    background(180, 80);
     // fill('red');
     // textSize(20);
 
@@ -281,37 +294,17 @@ function drawControllerView() {
 }
 
 function drawSpeakerView() {
-    if (currentFollowingId && allConnectionsData[currentFollowingId]) {
+    if (currentFollowingId && allConnectionsData[currentFollowingId] && allConnectionsData[currentFollowingId].canvas) {
         // Full canvas background
-        image(allConnectionsData[currentFollowingId].canvas,
-            0, 0,                    // destination x,y
-            width, height,           // destination width,height
-            0, 0,                    // source x,y
-            allConnectionsData[currentFollowingId].canvas.width,
-            allConnectionsData[currentFollowingId].canvas.height,
-            'contain',               // fit mode
-            'center', 'center'       // alignment
-        );
-
+        image(allConnectionsData[currentFollowingId].canvas, 0, 0, width, width * (canvasRatioHeight / canvasRatioWidth));
 
         if (allConnectionsData[currentFollowingId].video) {
-            console.log("follwing video");
-            image(allConnectionsData[currentFollowingId].video, width - 500, 50, 500, 200);
+            // console.log("follwing video");
+            image(allConnectionsData[currentFollowingId].video, width - 600, 100, 500, 500*(webcamRatioHeight / webcamRatioWidth));
         }
         else {
             console.log("no following video");
         }
-
-        // Small video overlay - will fit within a 200x200 box
-        console.log("following video", allConnectionsData[currentFollowingId].video);
-        // image(allConnectionsData[currentFollowingId].video, 
-        //     width-300, 50,           // destination x,y
-        //     200, 200,                // destination width,height
-        //     0, 0,                    // source x,y
-        //     allConnectionsData[currentFollowingId].video.width, 
-        //     allConnectionsData[currentFollowingId].video.height, 
-        //     CONTAIN       // alignment
-        // );
     } else {
         findFollowing();
     }
@@ -320,9 +313,11 @@ function drawSpeakerView() {
 }
 
 function drawStickerView() {
+    background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
-        image(allConnectionsData[currentFollowingId].canvas, 0, 0, width / 2, height, 0, 0, allConnectionsData[currentFollowingId].canvas.width, allConnectionsData[currentFollowingId].canvas.height, 'contain');
-        image(allConnectionsData[currentFollowingId].video, width / 2, 0, width / 2, height, 0, 0, allConnectionsData[currentFollowingId].video.width, allConnectionsData[currentFollowingId].video.height, 'cover');
+        imageMode(CENTER);
+        image(allConnectionsData[currentFollowingId].canvas, width/4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
+        image(allConnectionsData[currentFollowingId].video, width * 3/4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
     } else {
         findFollowing();
     }
@@ -332,8 +327,9 @@ function drawStickerView() {
 
 function drawNoneView() {
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
-        image(allConnectionsData[currentFollowingId].canvas, 0, 0, width / 2, height, 0, 0, allConnectionsData[currentFollowingId].canvas.width, allConnectionsData[currentFollowingId].canvas.height, 'contain');
-        image(allConnectionsData[currentFollowingId].video, width / 2, 0, width / 2, height, 0, 0, allConnectionsData[currentFollowingId].video.width, allConnectionsData[currentFollowingId].video.height, 'cover');
+        imageMode(CENTER);
+        image(allConnectionsData[currentFollowingId].canvas, width/4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
+        image(allConnectionsData[currentFollowingId].video, width * 3/4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
     } else {
         findFollowing();
     }
@@ -344,6 +340,7 @@ function drawNoneView() {
 
 
 function SendRoleChange() {
+    console.log("sending role change", myData.role);
     let dataToSend = {
         dataType: 'roleChange',
         role: myData.role,
@@ -360,15 +357,15 @@ function SendRoleChange() {
 
 // Add this function to handle role changes
 function handleRoleChange() {
-    // // Clean up existing repulsion if changing from CONTROLLER
-    // if (myData.role !== ROLES[0] && repulsion) {
-    //     console.log('Cleaning up repulsion - role changed from CONTROLLER');
-    //     repulsion = null;
-    // }
+    // Clean up existing repulsion if changing from CONTROLLER
+    if (myData.role !== ROLES[0] && repulsion) {
+        console.log('Cleaning up repulsion - role changed from CONTROLLER');
+        repulsion = null;
+    }
 
-    // // Create new repulsion only if changing to CONTROLLER
-    // if (myData.role === ROLES[0] && !repulsion) {
-    //     console.log('Creating new repulsion - role changed to CONTROLLER');
-    //     repulsion = new Repulsion(width, height);
-    // }
+    // Create new repulsion only if changing to CONTROLLER
+    if (myData.role === ROLES[0] && !repulsion) {
+        console.log('Creating new repulsion - role changed to CONTROLLER');
+        repulsion = new Repulsion(width, height);
+    }
 }
