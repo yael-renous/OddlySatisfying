@@ -7,6 +7,8 @@ const webcamRatioHeight = 3;
 const canvasRatioWidth = 4;
 const canvasRatioHeight = 3;
 
+const popupTime = 10000;
+
 //all connections data 
 let allConnectionsData = [];
 
@@ -19,6 +21,7 @@ let p5LiveVideo;
 
 let userName = '';
 let myCanvas;
+let myAudio;
 let uuid;
 
 let currentFollowingId = null;
@@ -28,6 +31,7 @@ let myData;
 let repulsion = null;
 
 let audioStarted = false;
+
 
 //***========================== Setup ============================================ */
 
@@ -39,13 +43,16 @@ function setup() {
         myCanvas = createCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
     }
 
-    // userName = prompt("enter username");
-    // if (userName == null || userName.trim() === "") {
-    //     userName = "Anonymous" + Math.floor(Math.random() * 1000);
-    // }
+    // Use constraints to request audio from createCapture
+    let constraints = {
+        audio: true,
+        video: true
+    };
 
+    // myVideo = createCapture(constraints, gotMineConnectOthers);
     myVideo = createCapture(VIDEO, gotMineConnectOthers);
-    myVideo.size(myVideo.width, (webcamRatioHeight / webcamRatioWidth )* myVideo.width);
+
+    myVideo.size(myVideo.width, (webcamRatioHeight / webcamRatioWidth) * myVideo.width);
     myVideo.hide();
 
     uuid = crypto.randomUUID();
@@ -71,6 +78,10 @@ function gotMineConnectOthers(myStream) {
     p5LiveVideo.on('data', gotDataVideoStream);
     p5LiveVideo.on('disconnect', lostOtherVideo);
 
+
+    // let canvasStream = myCanvas.elt.captureStream(15);
+    // let audioTrack = myStream.getAudioTracks()[0];
+    // canvasStream.addTrack(audioTrack);
 
     p5liveCanvas = new p5LiveMedia(this, "CANVAS", myCanvas, "oodlystatisfyingroomCanvas");
     p5liveCanvas.on('stream', gotOtherCanvas);
@@ -104,8 +115,13 @@ function SendNewUserConnection() {
 
 
 function gotOtherVideo(stream, id) {
-    console.log("gotOtherVideo ");
+    console.log("gotOtherVideo");
     let otherVideo = stream;
+
+    // Improve quality of incoming video stream
+    otherVideo.elt.style.imageRendering = 'pixelated';
+    otherVideo.elt.style.quality = 'high';
+
     if (!videoStreamIDs[id]) {
         videoStreamIDs[id] = {
             'uuid': '',
@@ -162,8 +178,13 @@ function lostOtherVideo(id) {
 
 
 function gotOtherCanvas(stream, id) {
-    console.log("gotOtherCanvas ");
+    console.log("gotOtherCanvas");
     let otherCanvas = stream;
+
+    // Improve quality of incoming canvas stream
+    otherCanvas.elt.style.imageRendering = 'pixelated';
+    otherCanvas.elt.style.quality = 'high';
+
     if (!canvasStreamIDs[id]) {
         canvasStreamIDs[id] = {
             'uuid': '',
@@ -254,6 +275,19 @@ function handleNewUserCanvasConnection(userData, id) {
 
 function findFollowing() {
     currentFollowingId = null;
+
+    // Special case for NONE role
+    if (myData.role === ROLES[ROLES.length - 1]) {
+        // First try to find another NONE role to follow
+        for (let uuid in allConnectionsData) {
+            if (allConnectionsData[uuid].role === ROLES[ROLES.length - 1]) {
+                currentFollowingId = uuid;
+                return;
+            }
+        }
+    }
+
+    // Original logic for other roles (and fallback for NONE)
     let distance = 1;
     while (!currentFollowingId) {
         if (myData.currentRoleIndex - distance < 0) break;
@@ -291,27 +325,18 @@ function draw() {
 }
 
 function drawControllerView() {
-    // background('red');
-
-    // Draw repulsion effect
     repulsion.draw();
-    // // Draw recording indicator
-    // let blinkRate = 1; // Blink once per second
-    // let alpha = map(sin(frameCount * 0.05 * blinkRate), -1, 1, 0, 100);
-
-    // fill(0, 255, 0, alpha);
-    // noStroke();
-    // circle(30, 30, 10);
 }
 
 function drawSpeakerView() {
+    background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId] && allConnectionsData[currentFollowingId].canvas) {
         // Full canvas background
         image(allConnectionsData[currentFollowingId].canvas, 0, 0, width, width * (canvasRatioHeight / canvasRatioWidth));
 
         if (allConnectionsData[currentFollowingId].video) {
             // console.log("follwing video");
-            image(allConnectionsData[currentFollowingId].video, width - 600, 100, 500, 500*(webcamRatioHeight / webcamRatioWidth));
+            image(allConnectionsData[currentFollowingId].video, width - 600, 100, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
         }
         else {
             console.log("no following video");
@@ -327,25 +352,23 @@ function drawStickerView() {
     background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
         imageMode(CENTER);
-        image(allConnectionsData[currentFollowingId].canvas, width/4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
-        image(allConnectionsData[currentFollowingId].video, width * 3/4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
+        image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
+        image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
     } else {
         findFollowing();
     }
-    // fill('white');
-    // text("STICKER", width / 2, height / 2);
 }
 
 function drawNoneView() {
+    background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
         imageMode(CENTER);
-        image(allConnectionsData[currentFollowingId].canvas, width/4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
-        image(allConnectionsData[currentFollowingId].video, width * 3/4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
+        image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
+        image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
     } else {
         findFollowing();
     }
-    // fill('white');
-    // text("NONE", width / 2, height / 2);
+
 }
 
 
@@ -406,14 +429,14 @@ function showRolePopup(newRole) {
     const popup = document.getElementById('role-popup');
     // Make the initial role message more welcoming
     const isInitialRole = newRole === ROLES[0];
-    popup.textContent = isInitialRole ? 
-        `Welcome! You are the ${newRole}` : 
+    popup.textContent = isInitialRole ?
+        `Welcome! You are the ${newRole}` :
         `New Role: ${newRole}`;
-    
+
     popup.classList.add('visible');
 
     setTimeout(() => {
         popup.classList.remove('visible');
-    }, 3000); // Show for 3 seconds
+    }, popupTime);
 }
 
