@@ -7,7 +7,7 @@ const webcamRatioHeight = 3;
 const canvasRatioWidth = 4;
 const canvasRatioHeight = 3;
 
-const popupTime = 10000;
+const popupTime = 20000;
 
 //all connections data 
 let allConnectionsData = [];
@@ -427,12 +427,18 @@ function mousePressed() {
 
 function showRolePopup(newRole) {
     const popup = document.getElementById('role-popup');
-    // Make the initial role message more welcoming
-    const isInitialRole = newRole === ROLES[0];
-    popup.textContent = isInitialRole ?
-        `Welcome! You are the ${newRole}` :
-        `New Role: ${newRole}`;
+    let message = '';
 
+    if (newRole === ROLES[0]) { // CONTROLLER
+        message = 'Play around this satisfying interaction';
+    } else if (newRole === ROLES[1]) { // SPEAKER
+        message = 'You are no longer in control, enjoy by observing';
+
+    } else if (newRole === ROLES[3]) { // NONE
+        message = 'Is this satisfying?';
+    }
+
+    popup.textContent = message;
     popup.classList.add('visible');
 
     setTimeout(() => {
