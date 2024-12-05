@@ -64,4 +64,30 @@ body {
 /* Add this class to show the indicator */
 #recording-indicator.active {
     display: block;
+}
+
+.custom-slider {
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    position: fixed;
+    z-index: 100;
+}
+
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.custom-slider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
 } 

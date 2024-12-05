@@ -92,7 +92,7 @@ class RepulsionParticle {
         let distance = steer.mag();
         if (distance > 0.5) {
             steer.normalize();
-            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce));
+            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce*1.02));
             this.acc.add(steer);
         }
         
@@ -121,10 +121,10 @@ class RepulsionParticle {
     
     display() {
         strokeWeight(1);
-        stroke(0, 100);
+        stroke(random(0, 255), this.sat, this.bright, 100);
         line(this.target.x, this.target.y, this.pos.x, this.pos.y);
         
-        strokeWeight(6);
+        strokeWeight(8);
         stroke(140, this.sat, this.bright);
         point(this.pos.x, this.pos.y);
     }
@@ -132,9 +132,9 @@ class RepulsionParticle {
 
 class Repulsion {
     constructor(width, height) {
-        this.count = 500;
-        this.spacing = 6;
-        this.repulsionRadius = 100;
+        this.count = 700;
+        this.spacing = 9;
+        this.repulsionRadius = 80;
         this.particles = [];
         this.width = width;
         this.height = height;
@@ -148,20 +148,24 @@ class Repulsion {
 
     initParticles() {
         for (let i = 0; i < this.count; i++) {
-            let angle = i * 137.5;
-            let r = this.spacing * sqrt(i);
-            let x = r * cos(radians(angle)) + this.width / 2;
-            let y = r * sin(radians(angle)) + this.height / 2;
-            let distToCenter = dist(x, y, this.width / 2, this.height / 2);
-            let s = 255 - distToCenter * 1.25;
-            let b = 150 + distToCenter * 1;
-            
+            let { x, y, s, b } = this.calculateParticleAttributes(i);
             this.particles.push(new RepulsionParticle(
                 random(this.width), -200, 
                 x, y, 
                 0.5,
                 s, b));
         }
+    }
+
+    calculateParticleAttributes(index) {
+        let angle = index * 137.5;
+        let r = this.spacing * sqrt(index);
+        let x = r * cos(radians(angle)) + this.width / 2;
+        let y = r * sin(radians(angle)) + this.height / 2;
+        let distToCenter = dist(x, y, this.width / 2, this.height / 2);
+        let s = 255 - distToCenter * 1;
+        let b = 150 + distToCenter * 0.8;
+        return { x, y, s, b };
     }
 
     // Add method to update remote mouse position
@@ -171,15 +175,37 @@ class Repulsion {
     }
 
     draw() {
-        // Update to use remote mouse position instead of mouseX/mouseY
+        //  use remote mouse position instead of mouseX/mouseY
         for (let i = 0; i < this.particles.length; i++) {
             this.particles[i].move(this.remoteMouseX, this.remoteMouseY, this.repulsionRadius);
             this.particles[i].display();
         }
         
-        // Draw repulsion radius indicator using remote position
-        stroke(0, 50);
+        // Make repulsion radius indicator more visible on dark background
+        stroke(140, 255, 255, 50);
         strokeWeight(this.repulsionRadius * 2);
         point(this.remoteMouseX, this.remoteMouseY);
+    }
+
+    resize(newWidth, newHeight) {
+        this.width = newWidth;
+        this.height = newHeight;
+        
+        // Recalculate particle target positions
+        for (let i = 0; i < this.particles.length; i++) {
+            let { x, y, s, b } = this.calculateParticleAttributes(i);
+            
+            // Update target position
+            this.particles[i].target.x = x;
+            this.particles[i].target.y = y;
+            
+            // Update colors based on new distance
+            this.particles[i].sat = s;
+            this.particles[i].bright = b;
+        }
+    }
+
+    setRepulsionRadius(radius) {
+        this.repulsionRadius = radius;
     }
 }

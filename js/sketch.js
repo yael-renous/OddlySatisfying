@@ -1,6 +1,7 @@
 //@author: yael renous
 //@date: 2024-12-01
 
+
 const ROLES = ["CONTROLLER", "SPEAKER", "STICKER", "NONE"];
 const webcamRatioWidth = 4;
 const webcamRatioHeight = 3;
@@ -26,6 +27,7 @@ let myData;
 
 // Add to your global variables
 let repulsion = null;
+let radiusSlider;
 
 let audioStarted = false;
 
@@ -67,6 +69,12 @@ function setup() {
     if (myData.role === ROLES[0]) {
         recordingIndicator.classList.add('active');
     }
+
+    // Create slider
+    radiusSlider = createSlider(20, 200, 80);
+    radiusSlider.position(20, 20);
+    radiusSlider.style('width', '200px');
+    radiusSlider.addClass('custom-slider'); // For styling
 }
 
 function gotMineConnectOthers(myStream) {
@@ -201,7 +209,7 @@ function findFollowing() {
 //***========================== Draw ============================================ */
 
 function draw() {
-    background(180, 80);
+background(0);
     // fill('red');
     // textSize(20);
     //a sharedCanvas.image(myVideo, 0, 0);
@@ -210,7 +218,7 @@ function draw() {
             drawControllerView();
             break;
         case ROLES[1]:
-            drawStickerView();
+            drawSpeakerView();
             break;
         case ROLES[2]:
             drawStickerView();
@@ -220,6 +228,9 @@ function draw() {
             break;
     }
 
+    if (repulsion) {
+        repulsion.setRepulsionRadius(radiusSlider.value());
+    }
 }
 
 function drawControllerView() {
@@ -231,17 +242,13 @@ function drawControllerView() {
 
 function drawSpeakerView() {
     background('black');
-
-    if (currentFollowingId && allConnectionsData[currentFollowingId] && allConnectionsData[currentFollowingId].canvas) {
-        // Full canvas background
-        // image(allConnectionsData[currentFollowingId].canvas, 0, 0, width, width * (canvasRatioHeight / canvasRatioWidth));
-
+    if (currentFollowingId && allConnectionsData[currentFollowingId]) {
+        repulsion.draw();
         if (allConnectionsData[currentFollowingId].video) {
-            // console.log("follwing video");
-            image(allConnectionsData[currentFollowingId].video, width - 600, 100, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
+            image(allConnectionsData[currentFollowingId].video, width-600, 10, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
         }
         else {
-            console.log("no following video");
+            // console.log("no following video");
         }
     } else {
         findFollowing();
@@ -362,5 +369,19 @@ function showRolePopup(newRole) {
     setTimeout(() => {
         popup.classList.remove('visible');
     }, popupTime);
+}
+
+function windowResized() {
+    // Resize canvas based on window dimensions and aspect ratio
+    if (windowWidth > windowHeight) {
+        resizeCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
+    } else {
+        resizeCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
+    }
+
+    // Update repulsion with new dimensions
+    if (repulsion) {
+        repulsion.resize(width, height);
+    }
 }
 
