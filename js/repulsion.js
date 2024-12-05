@@ -92,7 +92,7 @@ class RepulsionParticle {
         let distance = steer.mag();
         if (distance > 0.5) {
             steer.normalize();
-            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce*1.02));
+            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce*1.2));
             this.acc.add(steer);
         }
         
@@ -164,7 +164,7 @@ class Repulsion {
         let y = r * sin(radians(angle)) + this.height / 2;
         let distToCenter = dist(x, y, this.width / 2, this.height / 2);
         let s = 255 - distToCenter * 1;
-        let b = 150 + distToCenter * 0.8;
+        let b = 80 + distToCenter * 0.8;
         return { x, y, s, b };
     }
 

@@ -35,12 +35,14 @@ let audioStarted = false;
 //***========================== Setup ============================================ */
 
 function setup() {
-    if (windowWidth > windowHeight) {
-        myCanvas = createCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
-    }
-    else {
-        myCanvas = createCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
-    }
+    // if (windowWidth > windowHeight) {
+    //     myCanvas = createCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
+    // }
+    // else {
+    //     myCanvas = createCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
+    // }
+
+    myCanvas = createCanvas(windowWidth, windowHeight);
 
     // Use constraints to request audio from createCapture
     let constraints = {
@@ -74,7 +76,8 @@ function setup() {
     radiusSlider = createSlider(20, 200, 80);
     radiusSlider.position(20, 20);
     radiusSlider.style('width', '200px');
-    radiusSlider.addClass('custom-slider'); // For styling
+    radiusSlider.addClass('custom-slider'); 
+    radiusSlider.input(OnRadiusSliderChange);
 }
 
 function gotMineConnectOthers(myStream) {
@@ -158,7 +161,13 @@ function gotDataVideoStream(data, id) {
     }
 
     if (d.dataType == 'controllerMousePosition') {
-        repulsion.updateRemotePosition(d.x, d.y);
+        let realX = d.normalizedX * width;
+        let realY = d.normalizedY * height;
+        repulsion.updateRemotePosition(realX, realY);
+    }
+
+    if(d.dataType == 'repulsionRadius') {
+        repulsion.setRepulsionRadius(d.radius);
     }
 }
 
@@ -228,9 +237,7 @@ background(0);
             break;
     }
 
-    if (repulsion) {
-        repulsion.setRepulsionRadius(radiusSlider.value());
-    }
+ 
 }
 
 function drawControllerView() {
@@ -297,10 +304,12 @@ function SendRoleChange() {
 
 function sendMousePositionData() {
     if (!p5Live || !p5Live.socket || !p5Live.socket.connected) return;
+    let normalizedX = mouseX / width;
+    let normalizedY = mouseY / height;
     let dataToSend = {
         dataType: 'controllerMousePosition',
-        x: mouseX,
-        y: mouseY
+        normalizedX: normalizedX,
+        normalizedY: normalizedY
     };
     try {
         p5Live.send(JSON.stringify(dataToSend));
@@ -309,25 +318,15 @@ function sendMousePositionData() {
     }
 }
 
-// // Add window resize handler if you don't have one
-// function windowResized() {
-//     resizeCanvas(windowWidth, windowHeight);
-//     repulsion.resize(width, height);
-// }
-
 // Add this function to handle role changes
 function handleRoleChange() {
     // Clean up existing repulsion if changing from CONTROLLER
-    // if (myData.role !== ROLES[0] && repulsion) {
-    //     console.log('Cleaning up repulsion - role changed from CONTROLLER');
-    //     repulsion = null;
-    // }
+    if (myData.role !== ROLES[0]) {
+        radiusSlider.hide();  // Hide the slider when not CONTROLLER
 
-    // // Create new repulsion only if changing to CONTROLLER
-    // if (myData.role === ROLES[0] && !repulsion) {
-    //     console.log('Creating new repulsion - role changed to CONTROLLER');
-    //     repulsion = new Repulsion(width, height);
-    // }
+    }
+
+   
 
     // Show/hide recording indicator based on role
     const recordingIndicator = document.getElementById('recording-indicator');
@@ -385,3 +384,11 @@ function windowResized() {
     }
 }
 
+function OnRadiusSliderChange() {
+    repulsion.setRepulsionRadius(radiusSlider.value());
+    let dataToSend = {
+        dataType: 'repulsionRadius',
+        radius: radiusSlider.value()
+    };
+    p5Live.send(JSON.stringify(dataToSend));
+}
