@@ -1,7 +1,5 @@
 class ConnectionData {
-    constructor(uuid, name, role, canvas=null, video=null) {
-        this.uuid = uuid;
-        this.canvas = canvas;
+    constructor( name, role, video=null) {
         this.video = video;
         this.name = name;
         this.role = role;
@@ -27,7 +25,6 @@ class ConnectionData {
 
     toJSON() {
         return {
-            uuid: this.uuid,
             name: this.name,
             role: this.role
         };

@@ -139,6 +139,10 @@ class Repulsion {
         this.width = width;
         this.height = height;
         
+        // Add properties to store remote mouse position
+        this.remoteMouseX = width / 2;
+        this.remoteMouseY = height / 2;
+        
         this.initParticles();
     }
 
@@ -160,16 +164,22 @@ class Repulsion {
         }
     }
 
+    // Add method to update remote mouse position
+    updateRemotePosition(x, y) {
+        this.remoteMouseX = x;
+        this.remoteMouseY = y;
+    }
+
     draw() {
-        // Draw particles
+        // Update to use remote mouse position instead of mouseX/mouseY
         for (let i = 0; i < this.particles.length; i++) {
-            this.particles[i].move(mouseX, mouseY, this.repulsionRadius);
+            this.particles[i].move(this.remoteMouseX, this.remoteMouseY, this.repulsionRadius);
             this.particles[i].display();
         }
         
-        // Draw repulsion radius indicator
+        // Draw repulsion radius indicator using remote position
         stroke(0, 50);
         strokeWeight(this.repulsionRadius * 2);
-        point(mouseX, mouseY);
+        point(this.remoteMouseX, this.remoteMouseY);
     }
 }

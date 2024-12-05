@@ -12,11 +12,8 @@ const popupTime = 20000;
 //all connections data 
 let allConnectionsData = [];
 
-let videoStreamIDs = [];
-let canvasStreamIDs = [];
 
-let p5liveCanvas;
-let p5LiveVideo;
+let p5Live;
 
 
 let userName = '';
@@ -57,7 +54,7 @@ function setup() {
 
     uuid = crypto.randomUUID();
     console.log("uuid", uuid);
-    myData = new ConnectionData(uuid, userName, ROLES[0], myCanvas, myVideo);
+    myData = new ConnectionData(userName, ROLES[0], myVideo);
 
     // Initialize repulsion
     repulsion = new Repulsion(width, height);
@@ -73,26 +70,26 @@ function setup() {
 }
 
 function gotMineConnectOthers(myStream) {
-    p5LiveVideo = new p5LiveMedia(this, "CAPTURE", myStream, "oodlystatisfyingroomVideo");
-    p5LiveVideo.on('stream', gotOtherVideo);
-    p5LiveVideo.on('data', gotDataVideoStream);
-    p5LiveVideo.on('disconnect', lostOtherVideo);
+    p5Live = new p5LiveMedia(this, "CAPTURE", myStream, "oodlystatisfyingroom");
+    p5Live.on('stream', gotOtherVideo);
+    p5Live.on('data', gotDataVideoStream);
+    p5Live.on('disconnect', lostOtherVideo);
 
 
     // let canvasStream = myCanvas.elt.captureStream(15);
     // let audioTrack = myStream.getAudioTracks()[0];
     // canvasStream.addTrack(audioTrack);
 
-    p5liveCanvas = new p5LiveMedia(this, "CANVAS", myCanvas, "oodlystatisfyingroomCanvas");
-    p5liveCanvas.on('stream', gotOtherCanvas);
-    p5liveCanvas.on('disconnect', lostOtherCanvas);
-    p5liveCanvas.on('data', gotDataCanvasStream);
+    // p5liveCanvas = new p5LiveMedia(this, "CANVAS", myCanvas, "oodlystatisfyingroomCanvas");
+    // p5liveCanvas.on('stream', gotOtherCanvas);
+    // p5liveCanvas.on('disconnect', lostOtherCanvas);
+    // p5liveCanvas.on('data', gotDataCanvasStream);
 
     trySendNewUserConnection();
 }
 
 function trySendNewUserConnection() {
-    if (!p5liveCanvas || !p5liveCanvas.socket || !p5liveCanvas.socket.connected) {
+    if (!p5Live || !p5Live.socket || !p5Live.socket.connected) {
         console.log("Connection not ready, retrying in 2 seconds...");
         setTimeout(trySendNewUserConnection, 2000);
     } else {
@@ -106,8 +103,8 @@ function SendNewUserConnection() {
         userData: myData.toJSON()
     };
     let dataToSendString = JSON.stringify(dataToSend);
-    p5liveCanvas.send(dataToSendString);
-    p5LiveVideo.send(dataToSendString);
+    // p5liveCanvas.send(dataToSendString);
+    p5Live.send(dataToSendString);
     console.log("SendNewUserConnection sent", dataToSendString);
 }
 
@@ -117,119 +114,53 @@ function SendNewUserConnection() {
 function gotOtherVideo(stream, id) {
     console.log("gotOtherVideo");
     let otherVideo = stream;
-
-    // Improve quality of incoming video stream
-    otherVideo.elt.style.imageRendering = 'pixelated';
-    otherVideo.elt.style.quality = 'high';
-
-    if (!videoStreamIDs[id]) {
-        videoStreamIDs[id] = {
-            'uuid': '',
-            'video': otherVideo
-        };
-        console.log("new video stream id");
+    if (!allConnectionsData[id]) {
+        allConnectionsData[id] = new ConnectionData( '', '', otherVideo);
     }
     else {
-        let uuid = videoStreamIDs[id].uuid;
-        if (!allConnectionsData[uuid]) allConnectionsData[uuid] = new ConnectionData(uuid, '', '', otherVideo);
-        allConnectionsData[uuid].video = otherVideo;
-        console.log("existing video stream id");
+        allConnectionsData[id].video = otherVideo;
     }
     otherVideo.hide();
 }
 
 
 function gotDataVideoStream(data, id) {
-    console.log("got video stream data", data);
     let d = JSON.parse(data);
     if (d.dataType == 'newUserConnection') {
-        if (videoStreamIDs[id]) {
-            videoStreamIDs[id].uuid = d.userData.uuid;
+        console.log("new user connection", data);
+        if (allConnectionsData[id]) {
+            allConnectionsData[id].role = d.userData.role;
+            allConnectionsData[id].name = d.userData.name;
         }
         else {
-            videoStreamIDs[id] = {
-                'uuid': d.userData.uuid,
-                'video': d.userData.video,
-            };
+            allConnectionsData[id] = new ConnectionData(d.userData.name, d.userData.role);
         }
-
-        if (allConnectionsData[d.userData.uuid]) {
-            allConnectionsData[d.userData.uuid].video = videoStreamIDs[id].video;
-        }
-        else {
-            allConnectionsData[d.userData.uuid] = new ConnectionData(d.userData.uuid, d.userData.name, d.userData.role, videoStreamIDs[id].video);
-        }
-        console.log(videoStreamIDs)
-    }
-}
-
-function lostOtherVideo(id) {
-    print("lost connection " + id)
-    if (!videoStreamIDs[id]) return;
-    let uuid = videoStreamIDs[id].uuid;
-    delete allConnectionsData[uuid];
-    delete videoStreamIDs[id];
-
-}
-
-//TODO update following when someone disconnects
-
-//***========================== Canvas Stream ============================================ */
-
-
-function gotOtherCanvas(stream, id) {
-    console.log("gotOtherCanvas");
-    let otherCanvas = stream;
-
-    // Improve quality of incoming canvas stream
-    otherCanvas.elt.style.imageRendering = 'pixelated';
-    otherCanvas.elt.style.quality = 'high';
-
-    if (!canvasStreamIDs[id]) {
-        canvasStreamIDs[id] = {
-            'uuid': '',
-            'canvas': otherCanvas
-        };
-        console.log("new canvas stream id");
-    }
-    else {
-        let uuid = canvasStreamIDs[id].uuid;
-        if (!allConnectionsData[uuid]) allConnectionsData[uuid] = new ConnectionData(uuid, '', '', otherCanvas);
-        allConnectionsData[uuid].canvas = otherCanvas;
-        console.log("existing canvas stream id");
-    }
-    otherCanvas.hide();
-}
-
-
-
-function gotDataCanvasStream(data, id) {
-    console.log("got canvas stream data", data.dataType);
-
-    let d = JSON.parse(data);
-    if (d.dataType == 'newUserConnection') {
-        handleNewUserCanvasConnection(d.userData, id);
-        console.log("changing my role");
         myData.nextRole();
         console.log("my new role", myData.role);
         handleRoleChange();
         SendRoleChange();
     }
 
+
     if (d.dataType == 'roleChange') {
-        if (!canvasStreamIDs[id]) return;
-        let uuid = canvasStreamIDs[id].uuid;
-        if (!allConnectionsData[uuid]) return;
-        allConnectionsData[uuid].role = d.role;
+        if (!allConnectionsData[id]) return;
+        allConnectionsData[id].role = d.role;
         handleRoleChange();
-        checkIfToFollow(uuid);
+        checkIfToFollow(id);
     }
 
-    // console.log(allConnectionsData);
+    if (d.dataType == 'controllerMousePosition') {
+        repulsion.updateRemotePosition(d.x, d.y);
+    }
 }
 
+function lostOtherVideo(id) {
+    print("lost connection " + id)
+    if (!allConnectionsData[id]) return;
+    delete allConnectionsData[id];
+}
 
-
+//=================================== Helpers ============================================ */
 function checkIfToFollow(uuid) {
     if (myData.currentRoleIndex == 0) return;
     if (myData.currentRoleIndex == ROLES.length - 1) {
@@ -240,38 +171,6 @@ function checkIfToFollow(uuid) {
         currentFollowingId = uuid;
     }
 }
-
-function lostOtherCanvas(id) {
-    print("lost connection " + id)
-    if (!canvasStreamIDs[id]) return;
-    let uuid = canvasStreamIDs[id].uuid;
-    delete allConnectionsData[uuid];
-    delete canvasStreamIDs[id];
-}
-
-function handleNewUserCanvasConnection(userData, id) {
-    console.log("added new user canvas connection");
-    let uuid = userData.uuid;
-    if (canvasStreamIDs[id]) {
-        canvasStreamIDs[id].uuid = uuid;
-    }
-    else {
-        canvasStreamIDs[id] = {
-            'uuid': uuid,
-            'canvas': ''
-        };
-    }
-
-    if (allConnectionsData[uuid]) {
-        allConnectionsData[uuid].name = userData.name;
-        allConnectionsData[uuid].role = userData.role;
-        allConnectionsData[uuid].canvas = canvasStreamIDs[id].canvas;
-    }
-    else {
-        allConnectionsData[uuid] = new ConnectionData(uuid, userData.name, userData.role, canvasStreamIDs[id].canvas);
-    }
-}
-
 
 function findFollowing() {
     currentFollowingId = null;
@@ -305,14 +204,13 @@ function draw() {
     background(180, 80);
     // fill('red');
     // textSize(20);
-
     //a sharedCanvas.image(myVideo, 0, 0);
     switch (myData.role) {
         case ROLES[0]:
             drawControllerView();
             break;
         case ROLES[1]:
-            drawSpeakerView();
+            drawStickerView();
             break;
         case ROLES[2]:
             drawStickerView();
@@ -325,14 +223,18 @@ function draw() {
 }
 
 function drawControllerView() {
+    // console.log("drawControllerView");
+    repulsion.updateRemotePosition(mouseX, mouseY);
+    sendMousePositionData();
     repulsion.draw();
 }
 
 function drawSpeakerView() {
     background('black');
+
     if (currentFollowingId && allConnectionsData[currentFollowingId] && allConnectionsData[currentFollowingId].canvas) {
         // Full canvas background
-        image(allConnectionsData[currentFollowingId].canvas, 0, 0, width, width * (canvasRatioHeight / canvasRatioWidth));
+        // image(allConnectionsData[currentFollowingId].canvas, 0, 0, width, width * (canvasRatioHeight / canvasRatioWidth));
 
         if (allConnectionsData[currentFollowingId].video) {
             // console.log("follwing video");
@@ -344,16 +246,21 @@ function drawSpeakerView() {
     } else {
         findFollowing();
     }
-    // fill('white');
-    // text("SPEAKER", width / 2, height / 2);
+
 }
 
 function drawStickerView() {
     background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
         imageMode(CENTER);
-        image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
-        image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
+        repulsion.draw();
+        // image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
+        if (allConnectionsData[currentFollowingId].video) {
+            image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
+        }
+        else {
+            // console.log("no following video");
+        }
     } else {
         findFollowing();
     }
@@ -363,7 +270,6 @@ function drawNoneView() {
     background('black');
     if (currentFollowingId && allConnectionsData[currentFollowingId]) {
         imageMode(CENTER);
-        image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
         image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
     } else {
         findFollowing();
@@ -378,9 +284,22 @@ function SendRoleChange() {
     let dataToSend = {
         dataType: 'roleChange',
         role: myData.role,
-        uuid: myData.uuid
     };
-    p5liveCanvas.send(JSON.stringify(dataToSend));
+    p5Live.send(JSON.stringify(dataToSend));
+}
+
+function sendMousePositionData() {
+    if (!p5Live || !p5Live.socket || !p5Live.socket.connected) return;
+    let dataToSend = {
+        dataType: 'controllerMousePosition',
+        x: mouseX,
+        y: mouseY
+    };
+    try {
+        p5Live.send(JSON.stringify(dataToSend));
+    } catch (error) {
+        console.warn("Failed to send mouse position:", error);
+    }
 }
 
 // // Add window resize handler if you don't have one
@@ -392,16 +311,16 @@ function SendRoleChange() {
 // Add this function to handle role changes
 function handleRoleChange() {
     // Clean up existing repulsion if changing from CONTROLLER
-    if (myData.role !== ROLES[0] && repulsion) {
-        console.log('Cleaning up repulsion - role changed from CONTROLLER');
-        repulsion = null;
-    }
+    // if (myData.role !== ROLES[0] && repulsion) {
+    //     console.log('Cleaning up repulsion - role changed from CONTROLLER');
+    //     repulsion = null;
+    // }
 
-    // Create new repulsion only if changing to CONTROLLER
-    if (myData.role === ROLES[0] && !repulsion) {
-        console.log('Creating new repulsion - role changed to CONTROLLER');
-        repulsion = new Repulsion(width, height);
-    }
+    // // Create new repulsion only if changing to CONTROLLER
+    // if (myData.role === ROLES[0] && !repulsion) {
+    //     console.log('Creating new repulsion - role changed to CONTROLLER');
+    //     repulsion = new Repulsion(width, height);
+    // }
 
     // Show/hide recording indicator based on role
     const recordingIndicator = document.getElementById('recording-indicator');
@@ -416,7 +335,6 @@ function handleRoleChange() {
 }
 
 function mousePressed() {
-    console.log("mouse pressed");
     if (!audioStarted) {
         Tone.start().then(() => {
             console.log('Audio is ready');
