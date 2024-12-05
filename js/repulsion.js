@@ -119,14 +119,14 @@ class RepulsionParticle {
         this.acc.mult(0);
     }
     
-    display() {
-        strokeWeight(1);
-        stroke(random(0, 255), this.sat, this.bright, 100);
-        line(this.target.x, this.target.y, this.pos.x, this.pos.y);
+    display(repulsionGraphics) {
+        repulsionGraphics.strokeWeight(1);
+        repulsionGraphics.stroke(random(0, 255), this.sat, this.bright, 100);
+        repulsionGraphics.line(this.target.x, this.target.y, this.pos.x, this.pos.y);
         
-        strokeWeight(8);
-        stroke(140, this.sat, this.bright);
-        point(this.pos.x, this.pos.y);
+        repulsionGraphics.strokeWeight(8);
+        repulsionGraphics.stroke(140, this.sat, this.bright);
+        repulsionGraphics.point(this.pos.x, this.pos.y);
     }
 }
 
@@ -174,17 +174,17 @@ class Repulsion {
         this.remoteMouseY = y;
     }
 
-    draw() {
+    draw(repulsionGraphics) {
         //  use remote mouse position instead of mouseX/mouseY
         for (let i = 0; i < this.particles.length; i++) {
             this.particles[i].move(this.remoteMouseX, this.remoteMouseY, this.repulsionRadius);
-            this.particles[i].display();
+            this.particles[i].display(repulsionGraphics);
         }
         
         // Make repulsion radius indicator more visible on dark background
-        stroke(140, 255, 255, 50);
-        strokeWeight(this.repulsionRadius * 2);
-        point(this.remoteMouseX, this.remoteMouseY);
+        repulsionGraphics.stroke(140, 255, 255, 50);
+        repulsionGraphics.strokeWeight(this.repulsionRadius * 2);
+        repulsionGraphics.point(this.remoteMouseX, this.remoteMouseY);
     }
 
     resize(newWidth, newHeight) {

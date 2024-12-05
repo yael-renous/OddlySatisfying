@@ -2,7 +2,7 @@
 //@date: 2024-12-01
 
 
-const ROLES = ["CONTROLLER", "SPEAKER", "STICKER", "NONE"];
+const ROLES = ["CONTROLLER", "SPEAKER", "NONE"];
 const webcamRatioWidth = 4;
 const webcamRatioHeight = 3;
 const canvasRatioWidth = 4;
@@ -23,6 +23,7 @@ let myAudio;
 let uuid;
 
 let currentFollowingId = null;
+let currentControllerId = null;
 let myData;
 
 // Add to your global variables
@@ -31,18 +32,14 @@ let radiusSlider;
 
 let audioStarted = false;
 
+let repulsionGraphics; 
 
 //***========================== Setup ============================================ */
 
 function setup() {
-    // if (windowWidth > windowHeight) {
-    //     myCanvas = createCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
-    // }
-    // else {
-    //     myCanvas = createCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
-    // }
 
     myCanvas = createCanvas(windowWidth, windowHeight);
+    repulsionGraphics = createGraphics(width, height); // Initialize graphics object
 
     // Use constraints to request audio from createCapture
     let constraints = {
@@ -146,6 +143,7 @@ function gotDataVideoStream(data, id) {
         else {
             allConnectionsData[id] = new ConnectionData(d.userData.name, d.userData.role);
         }
+        currentControllerId = id;
         myData.nextRole();
         console.log("my new role", myData.role);
         handleRoleChange();
@@ -157,7 +155,7 @@ function gotDataVideoStream(data, id) {
         if (!allConnectionsData[id]) return;
         allConnectionsData[id].role = d.role;
         handleRoleChange();
-        checkIfToFollow(id);
+       // checkIfToFollow(id);
     }
 
     if (d.dataType == 'controllerMousePosition') {
@@ -218,10 +216,15 @@ function findFollowing() {
 //***========================== Draw ============================================ */
 
 function draw() {
-background(0);
-    // fill('red');
-    // textSize(20);
-    //a sharedCanvas.image(myVideo, 0, 0);
+    background(0);
+
+    // Draw repulsion on the graphics object
+
+    repulsionGraphics.background(0);
+    repulsion.draw(repulsionGraphics); // Pass graphics object to draw method
+    
+
+    // Display the graphics object according to the role
     switch (myData.role) {
         case ROLES[0]:
             drawControllerView();
@@ -229,67 +232,69 @@ background(0);
         case ROLES[1]:
             drawSpeakerView();
             break;
-        case ROLES[2]:
-            drawStickerView();
-            break;
-        case ROLES[3]:
+        case ROLES[ROLES.length - 1]:
             drawNoneView();
             break;
     }
-
- 
 }
 
 function drawControllerView() {
-    // console.log("drawControllerView");
+    if(!repulsion || !repulsionGraphics) return;
     repulsion.updateRemotePosition(mouseX, mouseY);
     sendMousePositionData();
-    repulsion.draw();
+    image(repulsionGraphics, 0, 0, width, height); // Display full-size
 }
+
 
 function drawSpeakerView() {
     background('black');
-    if (currentFollowingId && allConnectionsData[currentFollowingId]) {
-        repulsion.draw();
-        if (allConnectionsData[currentFollowingId].video) {
-            image(allConnectionsData[currentFollowingId].video, width-600, 10, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
+    if (currentControllerId && allConnectionsData[currentControllerId]) {
+        image(repulsionGraphics, 0, 0, width, height); // Display full-size
+        if (allConnectionsData[currentControllerId].video) {
+            image(allConnectionsData[currentControllerId].video, width-600, 10, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
         }
-        else {
-            // console.log("no following video");
-        }
-    } else {
-        findFollowing();
     }
-
-}
-
-function drawStickerView() {
-    background('black');
-    if (currentFollowingId && allConnectionsData[currentFollowingId]) {
-        imageMode(CENTER);
-        repulsion.draw();
-        // image(allConnectionsData[currentFollowingId].canvas, width / 4, height / 2, width / 2, (width / 2) * (canvasRatioHeight / canvasRatioWidth));
-        if (allConnectionsData[currentFollowingId].video) {
-            image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
-        }
-        else {
-            // console.log("no following video");
-        }
-    } else {
-        findFollowing();
+    else {
+        findController();
     }
 }
-
 function drawNoneView() {
     background('black');
-    if (currentFollowingId && allConnectionsData[currentFollowingId]) {
-        imageMode(CENTER);
-        image(allConnectionsData[currentFollowingId].video, width * 3 / 4, height / 2, width / 2, (width / 2) * (webcamRatioHeight / webcamRatioWidth));
-    } else {
-        findFollowing();
-    }
+    let connections = Object.values(allConnectionsData);
+    if (connections.length === 0) return;
 
+    let leftWidth = width / 2; // Start with half the screen width
+    let xOffset = width / 2;
+    let currentWidth = leftWidth;
+    imageMode(CENTER);
+    connections.forEach((connection, index) => {
+        if (connection.video) {
+            let currentWidth = leftWidth / (index + 1);
+            image(connection.video, xOffset+currentWidth/2, height/2, currentWidth, currentWidth * (webcamRatioHeight / webcamRatioWidth));
+            xOffset -= currentWidth/2;
+        }
+    });
+    // fill('red');
+    let repulsionWidth = xOffset+(currentWidth/2);
+    let repulsionHeight = repulsionWidth*(webcamRatioHeight / webcamRatioWidth);
+    image(repulsionGraphics, repulsionWidth/2, height/2, repulsionWidth, repulsionHeight);
+    // repulsion.resize(repulsionWidth, repulsionHeight );
+    // repulsion.draw();
+    // rect(0, 0, repulsionWidth, height);
 }
+
+function findController() {
+    currentControllerId = null;
+    
+    // Look through all connections to find the CONTROLLER
+    for (let uuid in allConnectionsData) {
+        if (allConnectionsData[uuid].role === ROLES[0]) { // ROLES[0] is "CONTROLLER"
+            currentControllerId = uuid;
+            break;
+        }
+    }
+}
+
 
 
 
@@ -326,8 +331,6 @@ function handleRoleChange() {
 
     }
 
-   
-
     // Show/hide recording indicator based on role
     const recordingIndicator = document.getElementById('recording-indicator');
     if (myData.role === ROLES[0]) {
@@ -358,7 +361,7 @@ function showRolePopup(newRole) {
     } else if (newRole === ROLES[1]) { // SPEAKER
         message = 'You are no longer in control, enjoy by observing';
 
-    } else if (newRole === ROLES[3]) { // NONE
+    } else if (newRole === ROLES[ROLES.length - 1]) { // NONE
         message = 'Is this satisfying?';
     }
 
@@ -371,13 +374,7 @@ function showRolePopup(newRole) {
 }
 
 function windowResized() {
-    // Resize canvas based on window dimensions and aspect ratio
-    if (windowWidth > windowHeight) {
-        resizeCanvas(windowWidth, windowWidth * (canvasRatioHeight / canvasRatioWidth));
-    } else {
-        resizeCanvas(windowHeight * (canvasRatioWidth / canvasRatioHeight), windowHeight);
-    }
-
+    resizeCanvas(windowWidth, windowHeight);
     // Update repulsion with new dimensions
     if (repulsion) {
         repulsion.resize(width, height);
