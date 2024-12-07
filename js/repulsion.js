@@ -48,26 +48,42 @@ class RepulsionSound {
         this.synth.connect(this.reverb);
 
         // Base notes for scaling
-        this.baseNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5'];
-        this.lastPlayTime = 0;
+        this.baseNotes = [
+            'C3', 'D3', 'E3', 'G3', 'A3',
+            'C4', 'D4', 'E4', 'G4', 'A4',
+            'C5', 'D5', 'E5', 'G5', 'A5',
+            'C6', 'D6', 'E6', 'G6', 'A6'
+        ];
+                this.lastPlayTime = 0;
         this.minPlayInterval = 50;
     }
 
     playSound(force, distanceFromTarget) {
         const now = Tone.now();
         if (now - this.lastPlayTime < 0.05) return;
-
+    
         // Map distance to note index (further = higher pitch)
-        const noteIndex = Math.floor(map(distanceFromTarget, 0, 100, 0, this.baseNotes.length - 1));
-        const note = this.baseNotes[constrain(noteIndex, 0, this.baseNotes.length - 1)];
+        const baseNoteIndex = Math.floor(map(distanceFromTarget, 0, 300, 0, this.baseNotes.length - 1));
         
-        // Adjust volume based on force
-        this.synth.volume.value = map(force, 0, 1, -30, -10);
+        // Add controlled randomness: randomly shift up or down by 0-2 notes
+        const randomShift = Math.floor(random(-2, 3)); // -2 to +2
+        const noteIndex = constrain(baseNoteIndex + randomShift, 0, this.baseNotes.length - 1);
         
-        // Play the sound
-        const duration = map(force, 0, 0.1, 0.1, 0.4) + "n";
+        // Occasionally skip to a higher octave (20% chance)
+        const octaveJump = random() < 0.2 ? 5 : 0;
+        const finalIndex = constrain(noteIndex + octaveJump, 0, this.baseNotes.length - 1);
+        
+        const note = this.baseNotes[finalIndex];
+        
+        // Adjust volume based on force with some randomness
+        const baseVolume = map(force, 0, 1, -30, -10);
+        this.synth.volume.value = baseVolume + random(-3, 3);
+        
+        // Add slight random variation to duration
+        const baseDuration = map(force, 0, 0.1, 0.1, 0.4);
+        const duration = (baseDuration * random(0.8, 1.2)) + "n";
+        
         this.synth.triggerAttackRelease(note, duration);
-        
         this.lastPlayTime = now;
     }
 }
@@ -150,7 +166,7 @@ class Repulsion {
         for (let i = 0; i < this.count; i++) {
             let { x, y, s, b } = this.calculateParticleAttributes(i);
             this.particles.push(new RepulsionParticle(
-                random(this.width), -200, 
+                x, y, 
                 x, y, 
                 0.5,
                 s, b));
@@ -163,7 +179,7 @@ class Repulsion {
         let x = r * cos(radians(angle)) + this.width / 2;
         let y = r * sin(radians(angle)) + this.height / 2;
         let distToCenter = dist(x, y, this.width / 2, this.height / 2);
-        let s = 255 - distToCenter * 1;
+        let s = 295 - distToCenter * 0.92;
         let b = 80 + distToCenter * 0.8;
         return { x, y, s, b };
     }
@@ -187,14 +203,15 @@ class Repulsion {
         repulsionGraphics.point(this.remoteMouseX, this.remoteMouseY);
     }
 
-    resize(newWidth, newHeight) {
+    resizeOLD(newWidth, newHeight) {
         this.width = newWidth;
         this.height = newHeight;
         
         // Recalculate particle target positions
         for (let i = 0; i < this.particles.length; i++) {
             let { x, y, s, b } = this.calculateParticleAttributes(i);
-            
+            this.particles[i].pos.x = x;
+            this.particles[i].pos.y = y;
             // Update target position
             this.particles[i].target.x = x;
             this.particles[i].target.y = y;
@@ -205,7 +222,20 @@ class Repulsion {
         }
     }
 
+    resize(newWidth, newHeight) {
+        this.width = newWidth;
+        this.height = newHeight;
+        this.remoteMouseX = newWidth / 2;
+        this.remoteMouseY = newHeight / 2;
+        this.particles = [];
+        this.initParticles();
+    }
+
     setRepulsionRadius(radius) {
         this.repulsionRadius = radius;
     }
 }
+
+
+
+

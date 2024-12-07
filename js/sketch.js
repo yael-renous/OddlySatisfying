@@ -5,8 +5,8 @@
 const ROLES = ["CONTROLLER", "SPEAKER", "NONE"];
 const webcamRatioWidth = 4;
 const webcamRatioHeight = 3;
-const canvasRatioWidth = 4;
-const canvasRatioHeight = 3;
+const repulsionRatioWidth = 4;
+const repulsionRatioHeight = 3;
 
 const popupTime = 20000;
 
@@ -32,7 +32,7 @@ let radiusSlider;
 
 let audioStarted = false;
 
-let repulsionGraphics; 
+let repulsionGraphics;
 
 //***========================== Setup ============================================ */
 
@@ -73,7 +73,7 @@ function setup() {
     radiusSlider = createSlider(20, 200, 80);
     radiusSlider.position(20, 20);
     radiusSlider.style('width', '200px');
-    radiusSlider.addClass('custom-slider'); 
+    radiusSlider.addClass('custom-slider');
     radiusSlider.input(OnRadiusSliderChange);
 }
 
@@ -82,17 +82,6 @@ function gotMineConnectOthers(myStream) {
     p5Live.on('stream', gotOtherVideo);
     p5Live.on('data', gotDataVideoStream);
     p5Live.on('disconnect', lostOtherVideo);
-
-
-    // let canvasStream = myCanvas.elt.captureStream(15);
-    // let audioTrack = myStream.getAudioTracks()[0];
-    // canvasStream.addTrack(audioTrack);
-
-    // p5liveCanvas = new p5LiveMedia(this, "CANVAS", myCanvas, "oodlystatisfyingroomCanvas");
-    // p5liveCanvas.on('stream', gotOtherCanvas);
-    // p5liveCanvas.on('disconnect', lostOtherCanvas);
-    // p5liveCanvas.on('data', gotDataCanvasStream);
-
     trySendNewUserConnection();
 }
 
@@ -123,7 +112,7 @@ function gotOtherVideo(stream, id) {
     console.log("gotOtherVideo");
     let otherVideo = stream;
     if (!allConnectionsData[id]) {
-        allConnectionsData[id] = new ConnectionData( '', '', otherVideo);
+        allConnectionsData[id] = new ConnectionData('', '', otherVideo);
     }
     else {
         allConnectionsData[id].video = otherVideo;
@@ -133,6 +122,7 @@ function gotOtherVideo(stream, id) {
 
 
 function gotDataVideoStream(data, id) {
+    console.log("gotDataVideoStream", data);
     let d = JSON.parse(data);
     if (d.dataType == 'newUserConnection') {
         console.log("new user connection", data);
@@ -144,10 +134,7 @@ function gotDataVideoStream(data, id) {
             allConnectionsData[id] = new ConnectionData(d.userData.name, d.userData.role);
         }
         currentControllerId = id;
-        myData.nextRole();
-        console.log("my new role", myData.role);
-        handleRoleChange();
-        SendRoleChange();
+        updateRole();
     }
 
 
@@ -155,19 +142,24 @@ function gotDataVideoStream(data, id) {
         if (!allConnectionsData[id]) return;
         allConnectionsData[id].role = d.role;
         handleRoleChange();
-       // checkIfToFollow(id);
+        // checkIfToFollow(id);
     }
 
     if (d.dataType == 'controllerMousePosition') {
+        if (myData.role == ROLES[0]) {
+            currentControllerId = id;
+            updateRole();
+        }
         let realX = d.normalizedX * width;
         let realY = d.normalizedY * height;
         repulsion.updateRemotePosition(realX, realY);
     }
 
-    if(d.dataType == 'repulsionRadius') {
+    if (d.dataType == 'repulsionRadius') {
         repulsion.setRepulsionRadius(d.radius);
     }
 }
+
 
 function lostOtherVideo(id) {
     print("lost connection " + id)
@@ -176,6 +168,13 @@ function lostOtherVideo(id) {
 }
 
 //=================================== Helpers ============================================ */
+function updateRole() {
+    myData.nextRole();
+    console.log("my new role", myData.role);
+    handleRoleChange();
+    SendRoleChange();
+}
+
 function checkIfToFollow(uuid) {
     if (myData.currentRoleIndex == 0) return;
     if (myData.currentRoleIndex == ROLES.length - 1) {
@@ -222,7 +221,7 @@ function draw() {
 
     repulsionGraphics.background(0);
     repulsion.draw(repulsionGraphics); // Pass graphics object to draw method
-    
+
 
     // Display the graphics object according to the role
     switch (myData.role) {
@@ -239,10 +238,22 @@ function draw() {
 }
 
 function drawControllerView() {
-    if(!repulsion || !repulsionGraphics) return;
+    if (!repulsion || !repulsionGraphics) return;
+    if (repulsionGraphics.width != width || repulsionGraphics.height != height) {
+        console.log("repulsionGraphics", repulsionGraphics.width, repulsionGraphics.height);
+        repulsionGraphics.clear();
+        repulsionGraphics = createGraphics(width, height);
+        return;
+    }
+    if (myCanvas.width == 0 || myCanvas.height == 0) {
+        console.log("myCanvas", myCanvas.width, myCanvas.height);
+        return;
+    }
     repulsion.updateRemotePosition(mouseX, mouseY);
     sendMousePositionData();
-    image(repulsionGraphics, 0, 0, width, height); // Display full-size
+    imageMode(CORNER);
+    fill('red');
+    image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
 }
 
 
@@ -251,7 +262,7 @@ function drawSpeakerView() {
     if (currentControllerId && allConnectionsData[currentControllerId]) {
         image(repulsionGraphics, 0, 0, width, height); // Display full-size
         if (allConnectionsData[currentControllerId].video) {
-            image(allConnectionsData[currentControllerId].video, width-600, 10, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
+            image(allConnectionsData[currentControllerId].video, width - 600, 10, 500, 500 * (webcamRatioHeight / webcamRatioWidth));
         }
     }
     else {
@@ -263,29 +274,51 @@ function drawNoneView() {
     let connections = Object.values(allConnectionsData);
     if (connections.length === 0) return;
 
-    let leftWidth = width / 2; // Start with half the screen width
-    let xOffset = width / 2;
-    let currentWidth = leftWidth;
+    // // let leftWidth = width / 2; // Start with half the screen width
+    // let xOffset = width / 2;
+    // let currentWidth = width / 2;
+    let currentSize = width / 2;
     imageMode(CENTER);
+
+    // Define some colors for the strokes
+    const strokeColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+
     connections.forEach((connection, index) => {
         if (connection.video) {
-            let currentWidth = leftWidth / (index + 1);
-            image(connection.video, xOffset+currentWidth/2, height/2, currentWidth, currentWidth * (webcamRatioHeight / webcamRatioWidth));
-            xOffset -= currentWidth/2;
+
+            // Set stroke properties
+            stroke(strokeColors[index % strokeColors.length]);
+            strokeWeight(4);
+            // console.log("connection", index, xOffset + currentWidth / 2, height / 2,);
+            // Draw the video
+            // image(connection.video, xOffset + currentWidth / 2, height / 2, currentWidth, currentWidth * (webcamRatioHeight / webcamRatioWidth));
+            image(connection.video, currentSize + currentSize / 2, height / 2, currentSize, currentSize * (webcamRatioHeight / webcamRatioWidth));
+
+            // Draw the stroke rectangle around the video
+            noFill();
+            rect(currentSize + currentSize / 2 - currentSize / 2,
+                height / 2 - (currentSize * (webcamRatioHeight / webcamRatioWidth)) / 2,
+                currentSize,
+                currentSize * (webcamRatioHeight / webcamRatioWidth));
+
+            currentSize = currentSize / 2;
+            // currentWidth = xOffset / 2;
+            // xOffset -= currentWidth / 2;
         }
     });
-    // fill('red');
-    let repulsionWidth = xOffset+(currentWidth/2);
-    let repulsionHeight = repulsionWidth*(webcamRatioHeight / webcamRatioWidth);
-    image(repulsionGraphics, repulsionWidth/2, height/2, repulsionWidth, repulsionHeight);
-    // repulsion.resize(repulsionWidth, repulsionHeight );
-    // repulsion.draw();
-    // rect(0, 0, repulsionWidth, height);
+
+    // Reset stroke settings
+    noStroke();
+
+    let repulsionWidth = currentSize*2;
+    let repulsionHeight = repulsionWidth * (repulsionGraphics.height / repulsionGraphics.width);
+    image(repulsionGraphics, repulsionWidth / 2, height / 2, repulsionWidth, repulsionHeight);
+
 }
 
 function findController() {
     currentControllerId = null;
-    
+
     // Look through all connections to find the CONTROLLER
     for (let uuid in allConnectionsData) {
         if (allConnectionsData[uuid].role === ROLES[0]) { // ROLES[0] is "CONTROLLER"
@@ -375,10 +408,15 @@ function showRolePopup(newRole) {
 
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+    console.log("windowResized", windowWidth, windowHeight);
+    repulsionGraphics.clear();
+    repulsionGraphics = createGraphics(windowWidth, windowHeight);
+    repulsion = new Repulsion(width, height);
+
+    console.log("repulsionGraphics", repulsionGraphics.width, repulsionGraphics.height);
+
     // Update repulsion with new dimensions
-    if (repulsion) {
-        repulsion.resize(width, height);
-    }
+
 }
 
 function OnRadiusSliderChange() {
