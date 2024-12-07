@@ -14,27 +14,46 @@
 } */
 
 
-
+/* 
 #canvas-container {
     width: 100%;
     height: 100%;
-    /* border: 2px solid #333; */
-}
+ border: 2px solid #333;
+} */
 
 #role-popup {
-    position: absolute;
-    top: 20px;
+    position: fixed;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.7);
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
     color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 18px;
+    padding: 20px 30px;
+    border-radius: 10px;
+    font-size: 24px;
     text-align: center;
     z-index: 1000;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 300px;
+}
+
+#role-popup button {
+    padding: 10px 20px;
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+}
+
+#role-popup button:hover {
+    background-color: #e0e0e0;
 }
 
 #role-popup.visible {
@@ -91,3 +110,43 @@
     border-radius: 50%;
     cursor: pointer;
 } 
+
+#instructions-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.95);
+    color: white;
+    padding: 30px 40px;
+    border-radius: 15px;
+    font-size: 20px;
+    text-align: center;
+    z-index: 2000; /* Higher than role-popup */
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    min-width: 400px;
+    max-width: 600px;
+}
+
+#instructions-popup button {
+    padding: 12px 30px;
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+#instructions-popup button:hover {
+    background-color: #e0e0e0;
+    transform: scale(1.05);
+}
+
+#instructions-popup.hidden {
+    display: none;
+}

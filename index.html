@@ -18,7 +18,21 @@
 </head>
 <body>
      <!-- <div id="canvas-container"></div> -->
-     <div id="role-popup" class="hidden">New Role: </div>
+     <div id="role-popup">
+        <span id="popup-message"></span>
+        <button id="popup-ok">OK</button>
+    </div>
      <div id="recording-indicator"></div>
+     <div id="instructions-popup">
+        <h2>Welcome to Oodly Satisfying</h2>
+        <p>This is an interactive experience where you'll take turns being:</p>
+        <ul>
+            <li>The Controller - Moving the interaction</li>
+            <li>The Speaker - Watching others control</li>
+            <li>The Observer - Watching everything unfold</li>
+        </ul>
+        <p>Click and drag your mouse to interact when you're the controller.</p>
+        <button id="start-button">Start Experience</button>
+    </div>
 </body>
 </html> 
