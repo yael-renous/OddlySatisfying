@@ -3,7 +3,7 @@ Repulsion Sound System
 */
 class RepulsionSound {
     static instance;
-    
+
     // Singleton pattern to ensure only one synth exists
     static getInstance() {
         if (!RepulsionSound.instance) {
@@ -54,34 +54,37 @@ class RepulsionSound {
             'C5', 'D5', 'E5', 'G5', 'A5',
             'C6', 'D6', 'E6', 'G6', 'A6'
         ];
-                this.lastPlayTime = 0;
+        this.lastPlayTime = 0;
         this.minPlayInterval = 50;
     }
 
     playSound(force, distanceFromTarget) {
         const now = Tone.now();
-        if (now - this.lastPlayTime < 0.05) return;
-    
-        // Map distance to note index (further = higher pitch)
-        const baseNoteIndex = Math.floor(map(distanceFromTarget, 0, 300, 0, this.baseNotes.length - 1));
+        if (now - this.lastPlayTime < 0.01) return;
+
+        // Map distance to note index (adjust range to avoid too-low notes)
+        const baseNoteIndex = Math.floor(map(distanceFromTarget, 0, 700, 3, this.baseNotes.length - 1));
         
-        // Add controlled randomness: randomly shift up or down by 0-2 notes
-        const randomShift = Math.floor(random(-2, 3)); // -2 to +2
-        const noteIndex = constrain(baseNoteIndex + randomShift, 0, this.baseNotes.length - 1);
+        // Add controlled randomness with smaller range for lower notes
+        const maxShift = baseNoteIndex < 5 ? 1 : 2;  // Less randomness for lower notes
+        const randomShift = Math.floor(random(-maxShift, maxShift + 1));
+        const noteIndex = constrain(baseNoteIndex + randomShift, 3, this.baseNotes.length - 1);
         
-        // Occasionally skip to a higher octave (20% chance)
-        const octaveJump = random() < 0.2 ? 5 : 0;
-        const finalIndex = constrain(noteIndex + octaveJump, 0, this.baseNotes.length - 1);
+        // Reduce frequency of octave jumps for lower notes
+        const octaveJumpChance = map(noteIndex, 0, this.baseNotes.length - 1, 0.05, 0.2);
+        const octaveJump = random() < octaveJumpChance ? 5 : 0;
+        const finalIndex = constrain(noteIndex + octaveJump, 3, this.baseNotes.length - 1);
         
         const note = this.baseNotes[finalIndex];
         
-        // Adjust volume based on force with some randomness
-        const baseVolume = map(force, 0, 1, -30, -10);
-        this.synth.volume.value = baseVolume + random(-3, 3);
+        // Adjust volume based on force with less variation for lower notes
+        const baseVolume = map(force, 0, 1, -30, -15);
+        const volumeVariation = map(noteIndex, 0, this.baseNotes.length - 1, 1, 3);
+        this.synth.volume.value = baseVolume + random(-volumeVariation, volumeVariation);
         
-        // Add slight random variation to duration
-        const baseDuration = map(force, 0, 0.1, 0.1, 0.4);
-        const duration = (baseDuration * random(0.8, 1.2)) + "n";
+        // Shorter duration for lower notes
+        const baseDuration = map(force, 0, 1, 0.1, 0.3);
+        const duration = (baseDuration * random(0.9, 1.1)) + "n";
         
         this.synth.triggerAttackRelease(note, duration);
         this.lastPlayTime = now;
@@ -99,19 +102,19 @@ class RepulsionParticle {
         this.bright = b;
         this.sound = RepulsionSound.getInstance();
     }
-    
+
     move(mouseX, mouseY, repulsionRadius) {
         let distThreshold = 20;
-        
+
         // Move towards target
         let steer = p5.Vector.sub(this.target, this.pos);
         let distance = steer.mag();
         if (distance > 0.5) {
             steer.normalize();
-            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce*1.2));
+            steer.mult(map(min(distance, distThreshold), 0, distThreshold, 0, this.maxForce * 1.2));
             this.acc.add(steer);
         }
-        
+
         // Repel from mouse
         let mouseDistance = dist(this.pos.x, this.pos.y, mouseX, mouseY);
         if (mouseDistance < repulsionRadius) {
@@ -119,7 +122,7 @@ class RepulsionParticle {
             let force = map(mouseDistance, repulsionRadius, 0, 0, 1);
             repulse.mult(force);
             this.acc.add(repulse);
-            
+
             // Only try to play sound if force is significant
             if (force > 0.05) {
                 // Pass both force and distance from target
@@ -127,28 +130,28 @@ class RepulsionParticle {
                 this.sound.playSound(force, distanceFromTarget);
             }
         }
-        
+
         // Update physics
         this.vel.mult(0.95);
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.mult(0);
     }
-    
+
     display(repulsionGraphics) {
         // Calculate gradient based on Y position
-        let gradientPos = map(this.pos.y, height/9, height/1.2, 0, 1);
-        
+        let gradientPos = map(this.pos.y, height / 9, height / 1.2, 0, 1);
+
         // Interpolate between pink (255, 150, 180) and orange (255, 120, 50)
         let r = 255;  // Red stays at max
         let g = map(gradientPos, 0, 1, 150, 120);
         let b = map(gradientPos, 0, 1, 180, 50);
-        
+
         // Connecting line
         repulsionGraphics.strokeWeight(3);
-        repulsionGraphics.stroke(r+10, g+10, b+10, 40);  // Semi-transparent line
+        repulsionGraphics.stroke(r + 10, g + 10, b + 10, 40);  // Semi-transparent line
         repulsionGraphics.line(this.target.x, this.target.y, this.pos.x, this.pos.y);
-        
+
         // Main bubble surface
         repulsionGraphics.strokeWeight(22);
         repulsionGraphics.stroke(r, g, b, 90);
@@ -164,11 +167,11 @@ class Repulsion {
         this.particles = [];
         this.width = width;
         this.height = height;
-        
+
         // Add properties to store remote mouse position
         this.remoteMouseX = width / 2;
         this.remoteMouseY = height / 2;
-        
+
         this.initParticles();
     }
 
@@ -176,8 +179,8 @@ class Repulsion {
         for (let i = 0; i < this.count; i++) {
             let { x, y, s, b } = this.calculateParticleAttributes(i);
             this.particles.push(new RepulsionParticle(
-                x, y, 
-                x, y, 
+                x, y,
+                x, y,
                 0.5,
                 s, b));
         }
@@ -206,8 +209,8 @@ class Repulsion {
             this.particles[i].move(this.remoteMouseX, this.remoteMouseY, this.repulsionRadius);
             this.particles[i].display(repulsionGraphics);
         }
-        
-        repulsionGraphics.stroke(20,0,0, 20);
+
+        repulsionGraphics.stroke(255, 255, 255, 80);
         repulsionGraphics.strokeWeight(this.repulsionRadius * 2);
         repulsionGraphics.point(this.remoteMouseX, this.remoteMouseY);
     }

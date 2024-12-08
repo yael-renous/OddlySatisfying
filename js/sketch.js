@@ -269,25 +269,10 @@ function drawNoneView() {
     let currentSize = width / 2;
     imageMode(CENTER);
 
-    // Define some colors for the strokes
-    // const strokeColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
 
     connections.forEach((connection, index) => {
         if (connection.afterMe && connection.video) {
-
-            // // Set stroke properties
-            // stroke(strokeColors[index % strokeColors.length]);
-            // strokeWeight(4);
-
             image(connection.video, currentSize + currentSize / 2, height / 2, currentSize, currentSize * (webcamRatioHeight / webcamRatioWidth));
-
-            // // Draw the stroke rectangle around the video
-            // noFill();
-            // rect(currentSize + currentSize / 2 - currentSize / 2,
-            //     height / 2 - (currentSize * (webcamRatioHeight / webcamRatioWidth)) / 2,
-            //     currentSize,
-            //     currentSize * (webcamRatioHeight / webcamRatioWidth));
-
             currentSize = currentSize / 2;
         }
     });
