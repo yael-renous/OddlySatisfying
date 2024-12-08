@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Are you Satisfied?</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script type="text/javascript" src="https://p5livemedia.itp.io/simplepeer.min.js"></script>
     <script type="text/javascript" src="https://p5livemedia.itp.io/socket.io.js"></script>
@@ -16,23 +16,30 @@
     <script src="./js/sketch.js"></script>
 
 </head>
+
 <body>
-     <!-- <div id="canvas-container"></div> -->
-     <div id="role-popup">
+    <!-- <div id="canvas-container"></div> -->
+    <div id="role-popup">
         <span id="popup-message"></span>
         <button id="popup-ok">OK</button>
     </div>
-     <div id="recording-indicator"></div>
-     <div id="instructions-popup">
-        <h2>Welcome to Oodly Satisfying</h2>
-        <p>This is an interactive experience where you'll take turns being:</p>
-        <ul>
-            <li>The Controller - Moving the interaction</li>
-            <li>The Speaker - Watching others control</li>
-            <li>The Observer - Watching everything unfold</li>
-        </ul>
-        <p>Click and drag your mouse to interact when you're the controller.</p>
-        <button id="start-button">Start Experience</button>
+    <div id="recording-indicator"></div>
+    <div id="instructions-popup">
+        <h2>What is this feeling?</h2>
+        When did we become spectators?
+
+        From hands that move
+        To eyes that drift
+        You are being recorded through your webcam.
+        Other participants will be watching.
+
+        Don't let this distract you.
+        Focus on the interaction.
+
+        Enjoy the experience fully.
+
+        <button id="start-button">[Begin]</button>
     </div>
 </body>
-</html> 
+
+</html>

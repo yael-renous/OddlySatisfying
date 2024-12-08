@@ -203,36 +203,13 @@ class Repulsion {
         repulsionGraphics.point(this.remoteMouseX, this.remoteMouseY);
     }
 
-    resizeOLD(newWidth, newHeight) {
-        this.width = newWidth;
-        this.height = newHeight;
-        
-        // Recalculate particle target positions
-        for (let i = 0; i < this.particles.length; i++) {
-            let { x, y, s, b } = this.calculateParticleAttributes(i);
-            this.particles[i].pos.x = x;
-            this.particles[i].pos.y = y;
-            // Update target position
-            this.particles[i].target.x = x;
-            this.particles[i].target.y = y;
-            
-            // Update colors based on new distance
-            this.particles[i].sat = s;
-            this.particles[i].bright = b;
-        }
-    }
-
-    resize(newWidth, newHeight) {
-        this.width = newWidth;
-        this.height = newHeight;
-        this.remoteMouseX = newWidth / 2;
-        this.remoteMouseY = newHeight / 2;
-        this.particles = [];
-        this.initParticles();
-    }
 
     setRepulsionRadius(radius) {
         this.repulsionRadius = radius;
+    }
+
+    resetRadius() {
+        this.repulsionRadius = 80;
     }
 }
 

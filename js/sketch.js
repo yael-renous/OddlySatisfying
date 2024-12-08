@@ -41,6 +41,11 @@ let repulsionGraphics;
 
 // Add at the top with other global variables
 let hasStarted = false;
+let firstConnectionTime;
+
+// Add at the top with other constants
+const MOUSE_POSITION_SEND_INTERVAL = 100; // Send every 100ms
+let lastMousePositionSent = 0;
 
 //***========================== Setup ============================================ */
 
@@ -53,7 +58,6 @@ function setup() {
 function startExperience() {
     if (hasStarted) return;
     hasStarted = true;
-    
     // Hide instructions
     const instructionsPopup = document.getElementById('instructions-popup');
     instructionsPopup.classList.add('hidden');
@@ -96,6 +100,7 @@ function gotMineConnectOthers(myStream) {
     p5Live.on('stream', gotOtherVideo);
     p5Live.on('data', gotDataVideoStream);
     p5Live.on('disconnect', lostOtherVideo);
+    firstConnectionTime = new Date();
     trySendNewUserConnection();
 }
 
@@ -108,14 +113,21 @@ function trySendNewUserConnection() {
     }
 }
 
+let sentNewUserConnection = false;
 function SendNewUserConnection() {
+    if (!p5Live || !p5Live.socket || !p5Live.socket.connected) return;
     let dataToSend = {
         dataType: NEW_CONNECTION_STRING,
         userData: myData.toJSON()
     };
     let dataToSendString = JSON.stringify(dataToSend);
-    p5Live.send(dataToSendString);
-    console.log("SendNewUserConnection sent", dataToSendString);
+    try {
+        p5Live.send(dataToSendString);
+        console.log("SendNewUserConnection sent", dataToSendString);
+    } catch (error) {
+        console.warn("Failed to send new user connection:", error);
+    }
+    sentNewUserConnection = true;
 }
 
 //***========================== Video Stream ============================================ */
@@ -125,7 +137,7 @@ function gotOtherVideo(stream, id) {
     console.log("gotOtherVideo");
     let otherVideo = stream;
     if (!allConnectionsData[id]) {
-        allConnectionsData[id] = new ConnectionData('', '', otherVideo);
+        allConnectionsData[id] = new ConnectionData('', '', false, otherVideo);
     }
     else {
         allConnectionsData[id].video = otherVideo;
@@ -135,50 +147,56 @@ function gotOtherVideo(stream, id) {
 
 
 function gotDataVideoStream(data, id) {
-    console.log("gotDataVideoStream", data);
-    let d = JSON.parse(data);
-    if (d.dataType == NEW_CONNECTION_STRING) {
-        console.log("new user connection", data);
-        if (allConnectionsData[id]) {
-            allConnectionsData[id].role = d.userData.role;
-            allConnectionsData[id].name = d.userData.name;
+    // console.log("gotDataVideoStream", data);
+    try {
+        let d = JSON.parse(data);
+        if (d.dataType == NEW_CONNECTION_STRING) {
+            console.log("new user connection", data);
+            if (allConnectionsData[id]) {
+                allConnectionsData[id].role = d.userData.role;
+                allConnectionsData[id].name = d.userData.name;
+                allConnectionsData[id].afterMe = true;
+            }
+            else {
+                allConnectionsData[id] = new ConnectionData(d.userData.name, d.userData.role, true);
+            }
+            currentControllerId = id;
+            updateRole();
         }
-        else {
-            allConnectionsData[id] = new ConnectionData(d.userData.name, d.userData.role);
+
+
+        if (d.dataType == ROLE_CHANGE_STRING) {
+            console.log("gotRoleChange", d.role);
+            if (!allConnectionsData[id]) return;
+            allConnectionsData[id].role = d.role;
+            handleRoleChange();
+            // checkIfToFollow(id);
         }
-        currentControllerId = id;
-        updateRole();
-    }
 
+        if (d.dataType == MOUSE_POSITION_STRING) {
+            if (myData.role == ROLES[0]) {
+                return;
+            }
+            let realX = d.normalizedX * width;
+            let realY = d.normalizedY * height;
+            repulsion.updateRemotePosition(realX, realY);
+        }
 
-    if (d.dataType == ROLE_CHANGE_STRING) {
-        if (!allConnectionsData[id]) return;
-        allConnectionsData[id].role = d.role;
-        handleRoleChange();
-        // checkIfToFollow(id);
-    }
-
-    if (d.dataType == MOUSE_POSITION_STRING) {
-        // if (myData.role == ROLES[0]) {
-        //     currentControllerId = id;
-        //     updateRole();
-        // }
-        let realX = d.normalizedX * width;
-        let realY = d.normalizedY * height;
-        repulsion.updateRemotePosition(realX, realY);
-    }
-
-    if (d.dataType == REPULSION_RADIUS_STRING) {
-        repulsion.setRepulsionRadius(d.radius);
+        if (d.dataType == REPULSION_RADIUS_STRING) {
+            repulsion.setRepulsionRadius(d.radius);
+        }
+    } catch (error) {
+        console.warn("Failed to parse data:", error);
     }
 }
 
 
 function lostOtherVideo(id) {
-    print("lost connection " + id)
+    console.log("lost connection " + id);
     if (!allConnectionsData[id]) return;
     delete allConnectionsData[id];
-    if (allConnectionsData.length == 0) {
+    console.log("allConnectionsData", allConnectionsData);
+    if (Object.keys(allConnectionsData).length == 0) {
         console.log("no more connections, becoming controller");
         myData.role = ROLES[0];
         radiusSlider.show();
@@ -232,6 +250,8 @@ function drawControllerView() {
         return;
     }
     repulsion.updateRemotePosition(mouseX, mouseY);
+    // if(!sentNewUserConnection)
+    //     SendNewUserConnection();
     sendMousePositionData();
     imageMode(CORNER);
     fill('red');
@@ -241,6 +261,7 @@ function drawControllerView() {
 
 function drawSpeakerView() {
     background('black');
+    // console.log("drawSpeakerView", currentControllerId, allConnectionsData[currentControllerId]);
     if (currentControllerId && allConnectionsData[currentControllerId]) {
         image(repulsionGraphics, 0, 0, width, height); // Display full-size
         if (allConnectionsData[currentControllerId].video) {
@@ -264,7 +285,7 @@ function drawNoneView() {
     // const strokeColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
 
     connections.forEach((connection, index) => {
-        if (connection.video) {
+        if (connection.afterMe && connection.video) {
 
             // // Set stroke properties
             // stroke(strokeColors[index % strokeColors.length]);
@@ -286,7 +307,7 @@ function drawNoneView() {
     // Reset stroke settings
     noStroke();
 
-    let repulsionWidth = currentSize*2;
+    let repulsionWidth = currentSize * 2;
     let repulsionHeight = repulsionWidth * (repulsionGraphics.height / repulsionGraphics.width);
     image(repulsionGraphics, repulsionWidth / 2, height / 2, repulsionWidth, repulsionHeight);
 
@@ -316,16 +337,24 @@ function SendRoleChange() {
 }
 
 function sendMousePositionData() {
+    // Check if enough time has passed since last send
+    const currentTime = Date.now();
+    if (currentTime - lastMousePositionSent < MOUSE_POSITION_SEND_INTERVAL) return;
+
     if (!p5Live || !p5Live.socket || !p5Live.socket.connected) return;
+
     let normalizedX = mouseX / width;
     let normalizedY = mouseY / height;
     let dataToSend = {
         dataType: MOUSE_POSITION_STRING,
+        connectionTime: firstConnectionTime.getTime(),
+        userData: myData.toJSON(),
         normalizedX: normalizedX,
         normalizedY: normalizedY
     };
     try {
         p5Live.send(JSON.stringify(dataToSend));
+        lastMousePositionSent = currentTime;  // Update last sent timestamp
     } catch (error) {
         console.warn("Failed to send mouse position:", error);
     }
@@ -364,12 +393,12 @@ function showRolePopup(newRole) {
     const popup = document.getElementById('role-popup');
     const popupMessage = document.getElementById('popup-message');
     const okButton = document.getElementById('popup-ok');
-    
+
     let message = '';
     if (newRole === ROLES[0]) {
         message = "You are being recorded through your webcam.\nOther participants will be watching.\nDon't let this distract you.\nFocus on the interaction.\nEnjoy the experience fully.";
     } else if (newRole === ROLES[1]) {
-        message = 'You are no longer in control, enjoy by observing';
+        message = 'A new user has joined.\nYou can subtly influence the interaction by adjusting the circle radius in the slider be.';
     } else if (newRole === ROLES[ROLES.length - 1]) {
         message = 'Is this satisfying?';
     }
@@ -379,7 +408,7 @@ function showRolePopup(newRole) {
 
     // Remove any existing event listener
     okButton.removeEventListener('click', closePopup);
-    
+
     // Add new event listener
     okButton.addEventListener('click', closePopup);
 }

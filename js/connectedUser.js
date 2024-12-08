@@ -1,8 +1,9 @@
 class ConnectionData {
-    constructor( name, role, video=null) {
+    constructor( name, role, afterMe, video=null) {
         this.video = video;
         this.name = name;
         this.role = role;
+        this.afterMe = afterMe;
         this.currentRoleIndex = ROLES.indexOf(role);
     }
 
