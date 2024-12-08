@@ -1,3 +1,30 @@
+.aboreto-regular {
+    font-family: "Aboreto", system-ui;
+    font-weight: 400;
+    font-style: normal;
+  }
+  
+  .work-sans-regular {
+    font-family: "Work Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+  }
+  
+  .work-sans-medium {
+    font-family: "Work Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  .work-sans-bold {
+    font-family: "Work Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+  }
+  
 html, body {
     margin: 0;
     padding: 0;
@@ -90,7 +117,6 @@ canvas {
     100% { opacity: 0; }
 }
 
-/* Add this class to show the indicator */
 #recording-indicator.active {
     display: flex;
 }
@@ -126,6 +152,7 @@ canvas {
 } 
 
 #instructions-popup {
+    font-family: "Aboreto";
     position: fixed;
     top: 50%;
     left: 50%;
