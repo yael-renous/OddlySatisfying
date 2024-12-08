@@ -121,7 +121,7 @@ class RepulsionParticle {
             this.acc.add(repulse);
             
             // Only try to play sound if force is significant
-            if (force > 0.01) {
+            if (force > 0.05) {
                 // Pass both force and distance from target
                 let distanceFromTarget = dist(this.pos.x, this.pos.y, this.target.x, this.target.y);
                 this.sound.playSound(force, distanceFromTarget);
@@ -136,12 +136,22 @@ class RepulsionParticle {
     }
     
     display(repulsionGraphics) {
-        repulsionGraphics.strokeWeight(1);
-        repulsionGraphics.stroke(random(0, 255), this.sat, this.bright, 100);
+        // Calculate gradient based on Y position
+        let gradientPos = map(this.pos.y, height/9, height/1.2, 0, 1);
+        
+        // Interpolate between pink (255, 150, 180) and orange (255, 120, 50)
+        let r = 255;  // Red stays at max
+        let g = map(gradientPos, 0, 1, 150, 120);
+        let b = map(gradientPos, 0, 1, 180, 50);
+        
+        // Connecting line
+        repulsionGraphics.strokeWeight(3);
+        repulsionGraphics.stroke(r+10, g+10, b+10, 40);  // Semi-transparent line
         repulsionGraphics.line(this.target.x, this.target.y, this.pos.x, this.pos.y);
         
-        repulsionGraphics.strokeWeight(8);
-        repulsionGraphics.stroke(140, this.sat, this.bright);
+        // Main bubble surface
+        repulsionGraphics.strokeWeight(22);
+        repulsionGraphics.stroke(r, g, b, 90);
         repulsionGraphics.point(this.pos.x, this.pos.y);
     }
 }
@@ -149,7 +159,7 @@ class RepulsionParticle {
 class Repulsion {
     constructor(width, height) {
         this.count = 700;
-        this.spacing = 9;
+        this.spacing = 12;
         this.repulsionRadius = 80;
         this.particles = [];
         this.width = width;
@@ -197,8 +207,7 @@ class Repulsion {
             this.particles[i].display(repulsionGraphics);
         }
         
-        // Make repulsion radius indicator more visible on dark background
-        repulsionGraphics.stroke(140, 255, 255, 50);
+        repulsionGraphics.stroke(20,0,0, 20);
         repulsionGraphics.strokeWeight(this.repulsionRadius * 2);
         repulsionGraphics.point(this.remoteMouseX, this.remoteMouseY);
     }
