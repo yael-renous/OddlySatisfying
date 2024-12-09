@@ -13,7 +13,7 @@ const webcamRatioHeight = 3;
 const repulsionRatioWidth = 4;
 const repulsionRatioHeight = 3;
 
-const popupTime = 20000;
+const popupTime = 25000;
 
 //all connections data 
 let allConnectionsData = [];
@@ -24,29 +24,26 @@ let userName = '';
 let myCanvas;
 let repulsionGraphics;
 
-// let currentFollowingId = null;
 let currentControllerId = null;
 let myData;
 
-// Add to your global variables
 let repulsion = null;
 let radiusSlider;
 
 let audioStarted = false;
 
 
-// Add at the top with other global variables
 let hasStarted = false;
 let firstConnectionTime;
 
 let bg;
-// Add at the top with other constants
 const MOUSE_POSITION_SEND_INTERVAL = 100; // Send every 100ms
 let lastMousePositionSent = 0;
 
-// Add to your global variables at the top
 let bgColorPicker;
 let backgroundColor;
+
+let noneRoleSwitchCount = 0;
 
 //***========================== Setup ============================================ */
 
@@ -56,18 +53,11 @@ function setup() {
     startButton.addEventListener('click', startExperience);
     // Create canvas and initialize everything
     myCanvas = createCanvas(windowWidth, windowHeight);
+    repulsionGraphics = createGraphics(width, height);
     myCanvas.parent('canvas-container');
     bg = loadImage('pg.png');
-    repulsionGraphics = createGraphics(width, height);
-    repulsion = new Repulsion(width, height);
-
-    // // Create and position the color picker
-    // bgColorPicker = createColorPicker(color(2, 22, 3));
-    // bgColorPicker.position(20, height - 50);
-    // bgColorPicker.addClass('color-picker');
     
-    // // Initialize background color
-    // backgroundColor = bgColorPicker.color();
+    repulsion = new Repulsion(width, height);
 }
 
 function startExperience() {
@@ -96,8 +86,8 @@ function startExperience() {
 
 function gotMineConnectOthers(myStream) {
     p5Live = new p5LiveMedia(this, "CAPTURE", myStream, "oodlystatisfyingroom");
-    p5Live.on('stream', gotOtherVideo);
     p5Live.on('data', gotDataVideoStream);
+    p5Live.on('stream', gotOtherVideo);
     p5Live.on('disconnect', lostOtherVideo);
     trySendNewUserConnection();
 }
@@ -209,16 +199,15 @@ function updateRole() {
 //***========================== Draw ============================================ */
 
 function draw() {
-    // background('white');
 
-    // // Use the color picker value for background
-    // repulsionGraphics.background(255, 254, 240);
-    // repulsionGraphics.background(bgColorPicker.color());
     repulsionGraphics.image(bg, 0, 0, repulsionGraphics.width, repulsionGraphics.height);
-    repulsion.draw(repulsionGraphics); // Pass graphics object to draw method
+    repulsion.draw(repulsionGraphics); 
 
     if (!hasStarted) {
         repulsion.updateRemotePosition(0, 0);
+        if(repulsionGraphics.width == 0 || repulsionGraphics.height == 0) {
+            return;
+        }
         image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
         return;
     }
@@ -358,14 +347,19 @@ function showRolePopup(newRole) {
 
     let message = '';
     if (newRole === ROLES[0]) {
-        message = "You are being recorded through your webcam.\nOther participants will be watching.\nDon't let this distract you.\nFocus on the interaction.\nEnjoy the experience fully.";
+        message = 'Absolute creation.<br>Your will shapes the moment.<br><span class="question-text">What feeling flows within you?</span>';
     } else if (newRole === ROLES[1]) {
-        message = 'A new user has joined.\nYou can subtly influence the interaction by adjusting the circle radius in the slider be.';
+        message = "Control slips away.<br>Your hands no longer move the interaction.<br>The slider remains your last a drop of influence.<br>Watch through another's eyes.<br><span class='question-text'>What power lingers in this narrow space?</span>";
     } else if (newRole === ROLES[ROLES.length - 1]) {
-        message = 'Is this satisfying?';
+        if (noneRoleSwitchCount === 0) {
+            message = "Layers unfold.<br>Watching watchers watching.<br>Satisfaction becomes a reflection.<br><span class='question-text'>How far can an experience travel?</span>";
+        } else if (noneRoleSwitchCount >= 2) {
+            message = "Fragments of reaction.<br>Nested observations.<br>Witnessing the witnessing.<br><span class='question-text'>Where does the experience live now?</span>";
+        }
+        noneRoleSwitchCount++;
     }
-
-    popupMessage.textContent = message;
+    
+    popupMessage.innerHTML = message;
     popup.classList.add('visible');
 
     // Automatically close popup after popupTime milliseconds

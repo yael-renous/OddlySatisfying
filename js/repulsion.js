@@ -60,33 +60,19 @@ class RepulsionSound {
 
     playSound(force, distanceFromTarget) {
         const now = Tone.now();
-        if (now - this.lastPlayTime < 0.01) return;
+        if (now - this.lastPlayTime < 0.02) return;
 
-        // Map distance to note index (adjust range to avoid too-low notes)
-        const baseNoteIndex = Math.floor(map(distanceFromTarget, 0, 700, 3, this.baseNotes.length - 1));
-        
-        // Add controlled randomness with smaller range for lower notes
-        const maxShift = baseNoteIndex < 5 ? 1 : 2;  // Less randomness for lower notes
-        const randomShift = Math.floor(random(-maxShift, maxShift + 1));
-        const noteIndex = constrain(baseNoteIndex + randomShift, 3, this.baseNotes.length - 1);
-        
-        // Reduce frequency of octave jumps for lower notes
-        const octaveJumpChance = map(noteIndex, 0, this.baseNotes.length - 1, 0.05, 0.2);
-        const octaveJump = random() < octaveJumpChance ? 5 : 0;
-        const finalIndex = constrain(noteIndex + octaveJump, 3, this.baseNotes.length - 1);
-        
-        const note = this.baseNotes[finalIndex];
-        
-        // Adjust volume based on force with less variation for lower notes
-        const baseVolume = map(force, 0, 1, -30, -15);
-        const volumeVariation = map(noteIndex, 0, this.baseNotes.length - 1, 1, 3);
-        this.synth.volume.value = baseVolume + random(-volumeVariation, volumeVariation);
-        
-        // Shorter duration for lower notes
-        const baseDuration = map(force, 0, 1, 0.1, 0.3);
-        const duration = (baseDuration * random(0.9, 1.1)) + "n";
-        
+        // Map distance to note index (further = higher pitch)
+        const noteIndex = Math.floor(map(distanceFromTarget, 0, 400, 0, this.baseNotes.length - 1));
+        const note = this.baseNotes[constrain(noteIndex, 0, this.baseNotes.length - 1)];
+
+        // Adjust volume based on force
+        this.synth.volume.value = map(force, 0, 1, -30, -10);
+
+        // Play the sound
+        const duration = map(force, 0, 0.1, 0.1, 0.4) + "n";
         this.synth.triggerAttackRelease(note, duration);
+
         this.lastPlayTime = now;
     }
 }
@@ -124,7 +110,7 @@ class RepulsionParticle {
             this.acc.add(repulse);
 
             // Only try to play sound if force is significant
-            if (force > 0.05) {
+            if (force > 0.01) {
                 // Pass both force and distance from target
                 let distanceFromTarget = dist(this.pos.x, this.pos.y, this.target.x, this.target.y);
                 this.sound.playSound(force, distanceFromTarget);
@@ -153,7 +139,7 @@ class RepulsionParticle {
         repulsionGraphics.line(this.target.x, this.target.y, this.pos.x, this.pos.y);
 
         // Main bubble surface
-        repulsionGraphics.strokeWeight(22);
+        repulsionGraphics.strokeWeight(21);
         repulsionGraphics.stroke(r, g, b, 90);
         repulsionGraphics.point(this.pos.x, this.pos.y);
     }

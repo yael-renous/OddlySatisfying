@@ -46,16 +46,16 @@ canvas {
 }
 
 #role-popup {
-    font-family:"Work Sans";
+    font-family: "Helvetica", monospace;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(255, 255, 255, 0.413);
+    background-color: rgba(255, 255, 255, 0.739);
     color: rgb(165, 72, 32);
-        padding: 20px 30px;
-    border-radius: 50px;
-    font-size: 24px;
+    padding: 20px 30px;
+    border-radius: 20px;
+    font-size: 18px;
     text-align: left;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -64,28 +64,21 @@ canvas {
     gap: 20px;
     min-width: 300px;
 }
-
-/* #role-popup button {
-    padding: 10px 20px;
-    background-color: white;
-    color: black;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.2s ease;
+.question-text {
+    font-family: "Work Sans", sans-serif;
+    font-style: italic;
+    font-size: 22px;
+    text-align: center;
+    color: rgb(108, 38, 9);
+    margin-top: 10px;
+    display: block;  /* Makes it appear on a new line */
 }
-
-#role-popup button:hover {
-    background-color: #e0e0e0;
-} */
 
 #role-popup.visible {
     opacity: 1;
 }
 
 #recording-indicator {
-
     position: absolute;
     top: 20px;
     left: 20px;
@@ -131,7 +124,7 @@ canvas {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 5px;
     position: fixed;
-    bottom: 150px;
+    bottom: 50px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -162,21 +155,23 @@ canvas {
     left: 0;
     width: 100%;
     height: 100vh;
-    background-color: rgba(255, 255, 255, 0.178);
+    background-color: rgba(241, 188, 175, 0.246);
     /* padding: 30px 40px; */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    transition: all 0.3s ease;
+
 }
 
 #instructions-title {
     font-family: "Aboreto";
-    /* text-shadow: 0 0 10px rgba(115, 0, 255, 0.5),
-                 0 0 10px rgba(208, 0, 255, 0.3),
-                 0 0 10px rgba(7, 32, 255, 0.2);
-    animation: glow 2s ease-in-out infinite alternate; */
+    /* text-shadow: 0 0 10px rgb(115, 0, 255),
+                 0 0 10px rgba(208, 0, 255, 0.973),
+                 0 0 10px rgb(7, 32, 255); */
+    animation: glow 2s ease-in-out infinite alternate;
     font-size: 80px;
     text-align: center;
     color: rgb(165, 72, 32);
@@ -185,23 +180,23 @@ canvas {
 
 @keyframes glow {
     from {
-        text-shadow: 0 0 10px rgba(165, 72, 32, 0.5),
-                     0 0 20px rgba(165, 72, 32, 0.3),
-                     0 0 30px rgba(165, 72, 32, 0.2);
+        text-shadow: 0 0 2px rgba(165, 72, 32, 0.5),
+                     0 0 2px rgba(165, 72, 32, 0.3),
+                     0 0 2px rgba(165, 72, 32, 0.2);
     }
     to {
-        text-shadow: 0 0 20px rgba(165, 72, 32, 0.7),
-                     0 0 30px rgba(165, 72, 32, 0.5),
-                     0 0 40px rgba(165, 72, 32, 0.3);
+        text-shadow: 0 0 15px rgba(165, 72, 32, 0.7),
+                     0 0 15px rgba(165, 72, 32, 0.5),
+                     0 0 15px rgba(165, 72, 32, 0.3);
     }
 }
 
 #instructions-intro {
     margin-top: 0px;
-    color: rgb(165, 72, 32);
-    font-style: italic;
-    font-family: "Work Sans";
-    font-size: 25px;
+    color: rgb(108, 38, 9);
+    /* font-style: italic; */
+    font-family: "Garamond", monospace;
+    font-size: 20px;
     text-align: center;
     padding-bottom: 20px;
 
@@ -214,22 +209,25 @@ canvas {
     font-family: "Aboreto";
     padding: 12px 30px;
     background-color: rgba(233, 151, 116, 0.527);
-    color: rgb(0, 0, 0);
+    box-shadow: -2px 2px 10px rgba(165, 72, 32, 0.5);
+    color: rgb(165, 72, 32);
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 18px;
     width: 300px;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
     margin: 10px auto 0;
-    display: block;
+    /* display: block; */
 }
 
 #instructions-popup button:hover {
     /* background-color: rgba(255, 231, 182, 0.186); */
-    transform: scale(1.05);
+    /* transform: scale(1.05); */
+    box-shadow: -2px 2px 10px rgba(165, 72, 32, 0.802);
 }
 
 #instructions-popup.hidden {
     display: none;
 }
+
