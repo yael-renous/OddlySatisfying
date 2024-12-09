@@ -49,10 +49,10 @@ class RepulsionSound {
 
         // Base notes for scaling
         this.baseNotes = [
-            'C3', 'D3', 'E3', 'G3', 'A3',
             'C4', 'D4', 'E4', 'G4', 'A4',
             'C5', 'D5', 'E5', 'G5', 'A5',
-            'C6', 'D6', 'E6', 'G6', 'A6'
+            'C6', 'D6', 'E6', 'G6', 'A6',
+            'C7', 'D7', 'E7', 'G7', 'A7'
         ];
         this.lastPlayTime = 0;
         this.minPlayInterval = 50;
@@ -60,7 +60,7 @@ class RepulsionSound {
 
     playSound(force, distanceFromTarget) {
         const now = Tone.now();
-        if (now - this.lastPlayTime < 0.02) return;
+        if (now - this.lastPlayTime < 0.05) return;
 
         // Map distance to note index (further = higher pitch)
         const noteIndex = Math.floor(map(distanceFromTarget, 0, 400, 0, this.baseNotes.length - 1));
@@ -70,7 +70,7 @@ class RepulsionSound {
         this.synth.volume.value = map(force, 0, 1, -30, -10);
 
         // Play the sound
-        const duration = map(force, 0, 0.1, 0.1, 0.4) + "n";
+        const duration = map(force, 0, 0.1, 0.3, 0.4) + "n";
         this.synth.triggerAttackRelease(note, duration);
 
         this.lastPlayTime = now;
@@ -110,7 +110,7 @@ class RepulsionParticle {
             this.acc.add(repulse);
 
             // Only try to play sound if force is significant
-            if (force > 0.01) {
+            if (force > 0.02) {
                 // Pass both force and distance from target
                 let distanceFromTarget = dist(this.pos.x, this.pos.y, this.target.x, this.target.y);
                 this.sound.playSound(force, distanceFromTarget);
