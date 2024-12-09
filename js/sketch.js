@@ -355,7 +355,6 @@ function mousePressed() {
 function showRolePopup(newRole) {
     const popup = document.getElementById('role-popup');
     const popupMessage = document.getElementById('popup-message');
-    const okButton = document.getElementById('popup-ok');
 
     let message = '';
     if (newRole === ROLES[0]) {
@@ -369,11 +368,10 @@ function showRolePopup(newRole) {
     popupMessage.textContent = message;
     popup.classList.add('visible');
 
-    // Remove any existing event listener
-    okButton.removeEventListener('click', closePopup);
-
-    // Add new event listener
-    okButton.addEventListener('click', closePopup);
+    // Automatically close popup after popupTime milliseconds
+    setTimeout(() => {
+        closePopup();
+    }, popupTime);
 }
 
 function closePopup() {

@@ -148,8 +148,8 @@ class RepulsionParticle {
         let b = map(gradientPos, 0, 1, 180, 50);
 
         // Connecting line
-        repulsionGraphics.strokeWeight(3);
-        repulsionGraphics.stroke(r + 10, g + 10, b + 10, 40);  // Semi-transparent line
+        repulsionGraphics.strokeWeight(2);
+        repulsionGraphics.stroke(r +200, g - 200, b - 200, 30);  // Semi-transparent line
         repulsionGraphics.line(this.target.x, this.target.y, this.pos.x, this.pos.y);
 
         // Main bubble surface
