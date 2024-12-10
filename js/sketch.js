@@ -56,7 +56,7 @@ function setup() {
     repulsionGraphics = createGraphics(width, height);
     myCanvas.parent('canvas-container');
     bg = loadImage('pg.png');
-    
+
     repulsion = new Repulsion(width, height);
 }
 
@@ -201,11 +201,11 @@ function updateRole() {
 function draw() {
 
     repulsionGraphics.image(bg, 0, 0, repulsionGraphics.width, repulsionGraphics.height);
-    repulsion.draw(repulsionGraphics); 
+    repulsion.draw(repulsionGraphics);
 
     if (!hasStarted) {
         repulsion.updateRemotePosition(0, 0);
-        if(repulsionGraphics.width == 0 || repulsionGraphics.height == 0) {
+        if (repulsionGraphics.width == 0 || repulsionGraphics.height == 0) {
             return;
         }
         image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
@@ -348,24 +348,29 @@ function showRolePopup(newRole) {
     let message = '';
     if (newRole === ROLES[0]) {
         message = 'Absolute creation.<br>Your will shapes the moment.<br><span class="question-text">What feeling flows within you?</span>';
-    } else if (newRole === ROLES[1]) {
+    }
+    if (newRole === ROLES[1]) {
         message = "Control slips away.<br>Your hands no longer move the interaction.<br>The slider remains your last a drop of influence.<br>Watch through another's eyes.<br><span class='question-text'>What power lingers in this narrow space?</span>";
-    } else if (newRole === ROLES[ROLES.length - 1]) {
+    }
+    if (newRole === ROLES[ROLES.length - 1]) {
+        console.log("noneRoleSwitchCount", noneRoleSwitchCount);
         if (noneRoleSwitchCount === 0) {
             message = "Layers unfold.<br>Watching watchers watching.<br>Satisfaction becomes a reflection.<br><span class='question-text'>How far can an experience travel?</span>";
-        } else if (noneRoleSwitchCount >= 2) {
+        } 
+        if (noneRoleSwitchCount == 2) {
             message = "Fragments of reaction.<br>Nested observations.<br>Witnessing the witnessing.<br><span class='question-text'>Where does the experience live now?</span>";
         }
         noneRoleSwitchCount++;
     }
-    
-    popupMessage.innerHTML = message;
-    popup.classList.add('visible');
+    if (message.length > 0) {
+        popupMessage.innerHTML = message;
+        popup.classList.add('visible');
 
-    // Automatically close popup after popupTime milliseconds
-    setTimeout(() => {
-        closePopup();
-    }, popupTime);
+        // Automatically close popup after popupTime milliseconds
+        setTimeout(() => {
+            closePopup();
+        }, popupTime);
+    }
 }
 
 function closePopup() {
