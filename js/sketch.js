@@ -156,7 +156,7 @@ function gotDataVideoStream(data, id) {
             console.log("gotRoleChange", d.role);
             if (!allConnectionsData[id]) return;
             allConnectionsData[id].role = d.role;
-            handleRoleChange();
+            //handleRoleChange();
         }
 
         if (d.dataType == MOUSE_POSITION_STRING) {
