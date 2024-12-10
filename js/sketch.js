@@ -156,7 +156,7 @@ function gotDataVideoStream(data, id) {
             console.log("gotRoleChange", d.role);
             if (!allConnectionsData[id]) return;
             allConnectionsData[id].role = d.role;
-            //handleRoleChange();
+            handleRoleChange();
         }
 
         if (d.dataType == MOUSE_POSITION_STRING) {
@@ -350,12 +350,12 @@ function showRolePopup(newRole) {
         message = 'Absolute creation.<br>Your will shapes the moment.<br><span class="question-text">What feeling flows within you?</span>';
     }
     if (newRole === ROLES[1]) {
-        message = "A New User Has Joined.<br>Control slips away.<br>Your hands no longer move the interaction.<br>The slider remains your last a drop of influence.<br>Watch through another's eyes.<br><span class='question-text'>What power lingers in this narrow space?</span>";
+        message = "A new user has joined.<br>Control slips away.<br>Your hands no longer move the interaction.<br>The slider remains your last a drop of influence.<br>Watch through another's eyes.<br><span class='question-text'>What power lingers in this narrow space?</span>";
     }
     if (newRole === ROLES[ROLES.length - 1]) {
         console.log("noneRoleSwitchCount", noneRoleSwitchCount);
         if (noneRoleSwitchCount === 0) {
-            message = "More Join the experience.<br>Layers unfold.<br>Watching watchers watching.<br>Satisfaction becomes a reflection.<br><span class='question-text'>How far can an experience travel?</span>";
+            message = "More join the experience.<br>Layers unfold.<br>Watching watchers watching.<br>Satisfaction becomes a reflection.<br><span class='question-text'>How far can an experience travel?</span>";
         } 
         if (noneRoleSwitchCount == 2) {
             message = "Fragments of reaction.<br>Nested observations.<br>Witnessing the witnessing.<br><span class='question-text'>Where does the experience live now?</span>";
