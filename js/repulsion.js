@@ -17,7 +17,6 @@ class RepulsionSound {
             return RepulsionSound.instance;
         }
 
-        // Create a MonoSynth for a gentle sound
         this.synth = new Tone.MonoSynth({
             oscillator: {
                 type: "sine"
@@ -38,16 +37,13 @@ class RepulsionSound {
             }
         }).toDestination();
 
-        // Add reverb for space
         this.reverb = new Tone.Reverb({
             decay: 3,
             wet: 0.4
         }).toDestination();
 
-        // Connect everything
         this.synth.connect(this.reverb);
 
-        // Base notes for scaling
         this.baseNotes = [
             'C4', 'D4', 'E4', 'G4', 'A4',
             'C5', 'D5', 'E5', 'G5', 'A5',
@@ -76,6 +72,14 @@ class RepulsionSound {
         this.lastPlayTime = now;
     }
 }
+
+
+/*
+Repulsion Particle System taken from open processing code by Jason Labbe
+
+jasonlabbe3d.com
+twitter.com/russetPotato
+*/
 
 class RepulsionParticle {
     constructor(x, y, targetX, targetY, maxForce, s, b) {

@@ -1,8 +1,7 @@
 //@author: yael renous
 //@date: 2024-12-01
 
-
-const ROLES = ["CONTROLLER", "SPEAKER", "NONE"];
+const ROLES = ["CONTROLLER", "LIMITED_CONTROL", "NONE"];
 const NEW_CONNECTION_STRING = "newUserConnection";
 const MOUSE_POSITION_STRING = "controllerMousePosition";
 const REPULSION_RADIUS_STRING = "repulsionRadius";
@@ -10,39 +9,25 @@ const ROLE_CHANGE_STRING = "roleChange";
 
 const webcamRatioWidth = 4;
 const webcamRatioHeight = 3;
-const repulsionRatioWidth = 4;
-const repulsionRatioHeight = 3;
 
 const popupTime = 25000;
+const MOUSE_POSITION_SEND_INTERVAL = 100; // Send every 100ms
 
 //all connections data 
 let allConnectionsData = [];
-
-let p5Live;
-
-let userName = '';
-let myCanvas;
-let repulsionGraphics;
-
 let currentControllerId = null;
 let myData;
-
 let repulsion = null;
+
+let p5Live;
+let myCanvas;
+let repulsionGraphics;
 let radiusSlider;
-
-let audioStarted = false;
-
-
-let hasStarted = false;
-let firstConnectionTime;
-
 let bg;
-const MOUSE_POSITION_SEND_INTERVAL = 100; // Send every 100ms
+
 let lastMousePositionSent = 0;
-
-let bgColorPicker;
-let backgroundColor;
-
+let audioStarted = false;
+let hasStarted = false;
 let noneRoleSwitchCount = 0;
 
 //***========================== Setup ============================================ */
@@ -71,17 +56,10 @@ function startExperience() {
     myVideo.size(myVideo.width, (webcamRatioHeight / webcamRatioWidth) * myVideo.width);
     myVideo.hide();
 
-    myData = new ConnectionData(userName, ROLES[0], myVideo);
+    myData = new ConnectionData('', ROLES[0], myVideo);
     showRolePopup(ROLES[0]);
 
-    const recordingIndicator = document.getElementById('recording-indicator');
-    if (myData.role === ROLES[0]) {
-        recordingIndicator.classList.add('active');
-    }
-
-    radiusSlider = createSlider(20, 200, 80);
-    radiusSlider.addClass('custom-slider');
-    radiusSlider.input(OnRadiusSliderChange);
+    initializeUI();
 }
 
 function gotMineConnectOthers(myStream) {
@@ -101,7 +79,6 @@ function trySendNewUserConnection() {
     }
 }
 
-let sentNewUserConnection = false;
 function SendNewUserConnection() {
     if (!p5Live || !p5Live.socket || !p5Live.socket.connected) return;
     let dataToSend = {
@@ -115,10 +92,9 @@ function SendNewUserConnection() {
     } catch (error) {
         console.warn("Failed to send new user connection:", error);
     }
-    sentNewUserConnection = true;
 }
 
-//***========================== Video Stream ============================================ */
+//***========================== Live Media Stream ============================================ */
 
 
 function gotOtherVideo(stream, id) {
@@ -188,106 +164,6 @@ function lostOtherVideo(id) {
     }
 }
 
-//=================================== Helpers ============================================ */
-function updateRole() {
-    myData.nextRole();
-    console.log("my new role", myData.role);
-    handleRoleChange();
-    SendRoleChange();
-}
-
-//***========================== Draw ============================================ */
-
-function draw() {
-
-    repulsionGraphics.image(bg, 0, 0, repulsionGraphics.width, repulsionGraphics.height);
-    repulsion.draw(repulsionGraphics);
-
-    if (!hasStarted) {
-        repulsion.updateRemotePosition(0, 0);
-        if (repulsionGraphics.width == 0 || repulsionGraphics.height == 0) {
-            return;
-        }
-        image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
-        return;
-    }
-
-    // Display the graphics object according to the role
-    switch (myData.role) {
-        case ROLES[0]:
-            drawControllerView();
-            break;
-        case ROLES[1]:
-            drawSpeakerView();
-            break;
-        case ROLES[ROLES.length - 1]:
-            drawNoneView();
-            break;
-    }
-}
-
-function drawControllerView() {
-    if (!repulsion || !repulsionGraphics) return;
-    if (repulsionGraphics.width != width || repulsionGraphics.height != height || myCanvas.width == 0 || myCanvas.height == 0) return;
-    repulsion.updateRemotePosition(mouseX, mouseY);
-    sendMousePositionData();
-    imageMode(CORNER);
-    image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
-}
-
-
-function drawSpeakerView() {
-    background('black');
-    // console.log("drawSpeakerView", currentControllerId, allConnectionsData[currentControllerId]);
-    if (currentControllerId && allConnectionsData[currentControllerId]) {
-        image(repulsionGraphics, 0, 0, width, height); // Display full-size
-        if (allConnectionsData[currentControllerId].video) {
-            image(allConnectionsData[currentControllerId].video, width - width * 0.2 - width * 0.1, height * 0.1, width * 0.2, width * 0.2 * (webcamRatioHeight / webcamRatioWidth));
-        }
-    }
-    else {
-        findController();
-    }
-}
-function drawNoneView() {
-    background('black');
-    let connections = Object.values(allConnectionsData);
-    if (connections.length === 0) return;
-
-
-    let currentSize = width / 2;
-    imageMode(CENTER);
-
-
-    connections.forEach((connection, index) => {
-        if (connection.afterMe && connection.video) {
-            image(connection.video, currentSize + currentSize / 2, height / 2, currentSize, currentSize * (webcamRatioHeight / webcamRatioWidth));
-            currentSize = currentSize / 2;
-        }
-    });
-
-    // Reset stroke settings
-    noStroke();
-
-    let repulsionWidth = currentSize * 2;
-    let repulsionHeight = repulsionWidth * (webcamRatioHeight / webcamRatioWidth);
-    image(repulsionGraphics, repulsionWidth / 2, height / 2, repulsionWidth, repulsionHeight);
-
-}
-
-function findController() {
-    currentControllerId = null;
-    // Look through all connections to find the CONTROLLER
-    for (let uuid in allConnectionsData) {
-        if (allConnectionsData[uuid].role === ROLES[0]) { // ROLES[0] is "CONTROLLER"
-            currentControllerId = uuid;
-            break;
-        }
-    }
-}
-
-
-
 
 function SendRoleChange() {
     console.log("sending role change", myData.role);
@@ -321,16 +197,122 @@ function sendMousePositionData() {
     }
 }
 
-// Add this function to handle role changes
+
+//=================================== Helpers ============================================ */
+
+function initializeUI(){
+    const recordingIndicator = document.getElementById('recording-indicator');
+    if (myData.role === ROLES[0]) {
+        recordingIndicator.classList.add('active');
+    }
+
+    radiusSlider = createSlider(20, 200, 80);
+    radiusSlider.addClass('custom-slider');
+    radiusSlider.input(OnRadiusSliderChange);
+}
+
+
+function findController() {
+    currentControllerId = null;
+    // Look through all connections to find the CONTROLLER
+    for (let uuid in allConnectionsData) {
+        if (allConnectionsData[uuid].role === ROLES[0]) { // ROLES[0] is "CONTROLLER"
+            currentControllerId = uuid;
+            break;
+        }
+    }
+}
+
+function updateRole() {
+    myData.nextRole();
+    console.log("my new role", myData.role);
+    handleRoleChange();
+    SendRoleChange();
+}
+
 function handleRoleChange() {
-    // Only show slider for SPEAKER role
+    // Only show slider for limited control role
     if (myData.role != ROLES[1] && myData.role != ROLES[0]) {
         radiusSlider.hide();
     }
-
-    // Show role popup
     showRolePopup(myData.role);
 }
+
+//***========================== Draw ============================================ */
+
+function draw() {
+
+    repulsionGraphics.image(bg, 0, 0, repulsionGraphics.width, repulsionGraphics.height);
+    repulsion.draw(repulsionGraphics);
+
+    if (!hasStarted) {
+        repulsion.updateRemotePosition(0, 0);
+        if (repulsionGraphics.width == 0 || repulsionGraphics.height == 0) {
+            return;
+        }
+        image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
+        return;
+    }
+
+    // Display the graphics object according to the role
+    switch (myData.role) {
+        case ROLES[0]:
+            drawControllerView();
+            break;
+        case ROLES[1]:
+            drawLimitedControlView();
+            break;
+        case ROLES[ROLES.length - 1]:
+            drawNoneView();
+            break;
+    }
+}
+
+function drawControllerView() {
+    if (!repulsion || !repulsionGraphics) return;
+    if (repulsionGraphics.width != width || repulsionGraphics.height != height || myCanvas.width == 0 || myCanvas.height == 0) return;
+    repulsion.updateRemotePosition(mouseX, mouseY);
+    sendMousePositionData();
+    imageMode(CORNER);
+    image(repulsionGraphics, 0, 0, repulsionGraphics.width, repulsionGraphics.height); // Display full-size
+}
+
+
+function drawLimitedControlView() {
+    background('black');
+    if (currentControllerId && allConnectionsData[currentControllerId]) {
+        image(repulsionGraphics, 0, 0, width, height); // Display full-size
+        if (allConnectionsData[currentControllerId].video) {
+            image(allConnectionsData[currentControllerId].video, width - width * 0.2 - width * 0.1, height * 0.1, width * 0.2, width * 0.2 * (webcamRatioHeight / webcamRatioWidth));
+        }
+    }
+    else {
+        findController();
+    }
+}
+function drawNoneView() {
+    background('black');
+    let connections = Object.values(allConnectionsData);
+    if (connections.length === 0) return;
+
+
+    let currentSize = width / 2;
+    imageMode(CENTER);
+
+
+    connections.forEach((connection, index) => {
+        if (connection.afterMe && connection.video) {
+            image(connection.video, currentSize + currentSize / 2, height / 2, currentSize, currentSize * (webcamRatioHeight / webcamRatioWidth));
+            currentSize = currentSize / 2;
+        }
+    });
+
+    let repulsionWidth = currentSize * 2;
+    let repulsionHeight = repulsionWidth * (webcamRatioHeight / webcamRatioWidth);
+    image(repulsionGraphics, repulsionWidth / 2, height / 2, repulsionWidth, repulsionHeight);
+}
+
+//=================================== UI ============================================ */
 
 function mousePressed() {
     if (!audioStarted) {
@@ -366,7 +348,6 @@ function showRolePopup(newRole) {
         popupMessage.innerHTML = message;
         popup.classList.add('visible');
 
-        // Automatically close popup after popupTime milliseconds
         setTimeout(() => {
             closePopup();
         }, popupTime);
